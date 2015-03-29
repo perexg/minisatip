@@ -49,7 +49,12 @@ find_adapters ()
 	for (i = 0; i < 8; i++)
 		for (j = 0; j < 8; j++)
 	{
+#ifdef AXE
+		if (j > 0) continue;
+		sprintf (buf, "/dev/axe/frontend-%d", i);
+#else
 		sprintf (buf, "/dev/dvb/adapter%d/frontend%d", i, j);
+#endif
 		fd = open (buf, O_RDONLY | O_NONBLOCK);
 		//LOG("testing device %s -> fd: %d",buf,fd);
 		if (fd >= 0)
@@ -122,9 +127,18 @@ init_hw ()
 			find_adapters ();
 		LOG ("trying to open [%d] adapter %d and frontend %d", i, a[i].pa,
 			a[i].fn);
+#ifdef AXE
+		sprintf (buf, "/dev/axe/frontend-%d", a[i].pa);
+#else
 		sprintf (buf, "/dev/dvb/adapter%d/frontend%d", a[i].pa, a[i].fn);
+#endif
 		a[i].fe = open (buf, O_RDWR | O_NONBLOCK);
+
+#ifdef AXE
+		sprintf (buf, "/dev/axe/demuxts-%d", a[i].pa);
+#else
 		sprintf (buf, "/dev/dvb/adapter%d/dvr%d", a[i].pa, a[i].fn);
+#endif
 		a[i].dvr = open (buf, O_RDONLY | O_NONBLOCK);
 		if (a[i].fe < 0 || a[i].dvr < 0)
 		{
@@ -151,10 +165,12 @@ init_hw ()
 
 		num_adapters++;
 		LOG ("opened DVB adapter %d fe:%d dvr:%d", i, a[i].fe, a[i].dvr);
+#ifndef AXE
 		if (ioctl (a[i].dvr, DMX_SET_BUFFER_SIZE, opts.dvr) < 0)
 			perror ("couldn't set DVR buffer size");
 		else
 			LOG ("Done setting DVR buffer to %d bytes", DVR_BUFFER);
+#endif
 		init_dvb_parameters (&a[i].tp);
 		mark_pids_deleted (i, -1, NULL);
 		update_pids (i);

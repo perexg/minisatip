@@ -41,6 +41,10 @@
 #include <ctype.h>
 #include "dvb.h"
 #include "minisatip.h"
+#ifdef AXE
+#include "axe.h"
+#include "adapter.h"
+#endif
 
 extern struct struct_opts opts;
 
@@ -330,6 +334,7 @@ int setup_switch (int frontend_fd, transponder *tp)
 		hiband = 1;
 	}
 	
+#ifndef AXE
 	if(tp->switch_type == SWITCH_UNICABLE)
 	{
 		freq = send_unicable(frontend_fd, freq / 1000, diseqc, pol, hiband, tp->uslot, tp->ufreq);
@@ -343,6 +348,15 @@ int setup_switch (int frontend_fd, transponder *tp)
 		else 
 			LOGL(3, "Skip sending diseqc commands since the switch position doesn't need to be changed: pol %d, hiband %d, switch position %d", pol, hiband, diseqc);
 	}
+#else
+	LOGL(3, "axe_fe: reset for fd %d", frontend_fd);
+	if (ioctl(frontend_fd, FE_SET_VOLTAGE, pol ? SEC_VOLTAGE_18 : SEC_VOLTAGE_13) == -1)
+		LOG("axe_fd FE_SET_VOLTAGE failed for fd %d: %s", frontend_fd, strerror(errno));
+	if (axe_fe_reset(frontend_fd) < 0)
+		LOG("axe_fe: RESET failed for fd %d: %s", frontend_fd, strerror(errno));
+	if (axe_fe_thread_up(frontend_fd, hiband | (pol << 1)) < 0)
+		LOG("axe_fe: THREAD UP failed for fd %d: %s", frontend_fd, strerror(errno));
+#endif
 	
 	tp->old_pol = pol;
 	tp->old_hiband = hiband;
@@ -383,8 +397,10 @@ tune_it_s2 (int fd_frontend, transponder * tp)
 		{.cmd = DTV_INVERSION,.u.data = 0},
 		{.cmd = DTV_SYMBOL_RATE,.u.data = 0},
 		{.cmd = DTV_INNER_FEC,.u.data = 0},
+#ifndef AXE
 		{.cmd = DTV_PILOT,.u.data = 0},
 		{.cmd = DTV_ROLLOFF,.u.data = 0},
+#endif
 		{.cmd = DTV_TUNE},
 	};
 	static struct dtv_properties dvbs2_cmdseq =
@@ -465,8 +481,10 @@ tune_it_s2 (int fd_frontend, transponder * tp)
 			p = &dvbs2_cmdseq;
 			p->props[DELSYS].u.data = tp->sys;
 			p->props[MODULATION].u.data = tp->mtype;
+#ifndef AXE
 			p->props[PILOT].u.data = tp->plts;
 			p->props[ROLLOFF].u.data = tp->ro;
+#endif
 			p->props[INVERSION].u.data = tp->inversion;
 			p->props[SYMBOL_RATE].u.data = tp->sr;
 			p->props[FEC_INNER].u.data = tp->fec;
@@ -475,7 +493,12 @@ tune_it_s2 (int fd_frontend, transponder * tp)
 			LOG("tuning to %d(%d) pol: %s (%d) sr:%d fec:%s delsys:%s mod:%s rolloff:%s pilot:%s, ts clear=%d, ts pol=%d",
 				tp->freq, p->props[FREQUENCY].u.data, get_pol(tp->pol), tp->pol, p->props[SYMBOL_RATE].u.data, fe_fec[p->props[FEC_INNER].u.data],
 				fe_delsys[p->props[DELSYS].u.data], fe_modulation[p->props[MODULATION].u.data],
-				fe_rolloff[p->props[ROLLOFF].u.data], fe_pilot[p->props[PILOT].u.data], bclear, bpol);
+#ifdef AXE
+				"auto", "auto",
+#else
+				fe_rolloff[p->props[ROLLOFF].u.data], fe_pilot[p->props[PILOT].u.data],
+#endif
+				bclear, bpol);
 				
 			break;
 
@@ -560,6 +583,20 @@ set_pid (int hw, int ad, uint16_t i_pid)
 	char buf[100];
 	int fd;
 
+#ifdef AXE
+	adapter *a = get_adapter(hw);
+
+	if ( i_pid > 8192 || a == NULL)
+		LOG_AND_RETURN(-1, "pid %d > 8192 for ADAPTER %d", i_pid, hw);
+
+	if (axe_dmxts_add_pid(a->dvr, i_pid) < 0)
+	{
+		LOG ("failed setting filter on %d (%s)", i_pid, strerror (errno));
+		return -1;
+	}
+	LOG ("setting filter on PID %d for ADAPTER %d", i_pid, a->pa);
+	return (hw << 16) | i_pid;
+#else
 	if ( i_pid > 8192 )
 		LOG_AND_RETURN(-1, "pid %d > 8192 for /dev/dvb/adapter%d/demux%d", i_pid, hw, ad);
 		
@@ -585,6 +622,7 @@ set_pid (int hw, int ad, uint16_t i_pid)
 	}
 
 	LOG ("setting filter on PID %d for fd %d", i_pid, fd);
+#endif
 
 	return fd;
 }
@@ -592,6 +630,17 @@ set_pid (int hw, int ad, uint16_t i_pid)
 
 int del_filters (int fd, int pid)
 {
+#ifdef AXE
+	adapter *a = get_adapter(fd >> 16);
+	if (a == NULL)
+		return 0; /* closed */
+	if ((fd & 0xffff) != pid)
+		LOG_AND_RETURN(0, "AXE PID remove on an invalid handle %d, pid %d", fd, pid);
+	if (axe_dmxts_remove_pid(a->dvr, pid) < 0)
+		LOG ("AXE PID removew failed on PID %d ADAPTER %d: %s", pid, a->pa, strerror (errno))
+			else
+			LOG ("clearing filters on PID %d ADAPTER %d", pid, a->pa);
+#else
 	if (fd < 0)
 		LOG_AND_RETURN(0, "DMX_STOP on an invalid handle %d, pid %d", fd, pid);
 	if (ioctl (fd, DMX_STOP) < 0)
@@ -599,6 +648,7 @@ int del_filters (int fd, int pid)
 			else
 			LOG ("clearing filters on PID %d FD %d", pid, fd);
 	close (fd);
+#endif
 	return 0;
 }
 
@@ -606,6 +656,10 @@ int del_filters (int fd, int pid)
 fe_delivery_system_t
 dvb_delsys (int aid, int fd, fe_delivery_system_t *sys)
 {
+#ifdef AXE
+	LOG ("Delivery System DVB-S2 (AXE)");
+	return sys[0] = SYS_DVBS2;
+#else
 	int i, res, rv = 0;
 	struct dvb_frontend_info fe_info;
 
@@ -703,6 +757,7 @@ dvb_delsys (int aid, int fd, fe_delivery_system_t *sys)
 
 	LOG ("returning default from dvb_delsys => %s (count %d)", fe_delsys[rv] , nsys);
 	return (fe_delivery_system_t) rv;
+#endif
 
 }
 

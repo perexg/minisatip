@@ -417,11 +417,6 @@ int map_int (char *s, char ** v)
 
 char public[] = "Public: OPTIONS, DESCRIBE, SETUP, PLAY, TEARDOWN";
 
-static inline end_of_header(char *buf)
-{
-       return buf[0] == 0x0d && buf[1] == 0x0a && buf[2] == 0x0d && buf[3] == 0x0a;
-}
-
 char *
 http_response (sockets *s, int rc, char *ah, char *desc, int cseq, int lr)
 {
@@ -495,6 +490,11 @@ http_response (sockets *s, int rc, char *ah, char *desc, int cseq, int lr)
 }
 
 #define RBUF 4000
+
+static inline end_of_header(char *buf)
+{
+	return buf[0] == 0x0d && buf[1] == 0x0a && buf[2] == 0x0d && buf[3] == 0x0a;
+}
 
 int
 read_rtsp (sockets * s)
@@ -1000,7 +1000,11 @@ main (int argc, char *argv[])
 		becomeDaemon ();
 	if (opts.slog)
 		openlog ("minisatip", LOG_NDELAY|LOG_NOWAIT|LOG_PID|(opts.slog>1?LOG_PERROR:0), LOG_DAEMON);
+#ifdef AXE
+	LOGL(0, "Starting minisatip version %s, compiled with AXE DVB API",VERSION);
+#else
 	LOGL(0, "Starting minisatip version %s, compiled with dvbapi version: %04X",VERSION, DVBAPIVERSION);
+#endif
 	readBootID();
 	if ((ssdp = udp_bind (NULL, 1900)) < 1)
 		FAIL ("SSDP: Could not bind on udp port 1900");
