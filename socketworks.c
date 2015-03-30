@@ -433,6 +433,17 @@ select_and_execute ()
 					ss->rtime = c_time;
 					if(rlen>0)
 						ss->rlen += rlen;
+#ifdef AXE
+					if (ss->type == TYPE_DVR) {
+						while (rlen > 0 && ss->lbuf - ss->rlen >= 1316) {
+							rlen = read (ss->sock, &ss->buf[ss->rlen], ss->lbuf - ss->rlen);
+							if (rlen > 0)
+								ss->rlen += rlen;
+						}
+						if (rlen == 0 || (rlen < 0 || errno == -EAGAIN))
+							rlen = 1;
+					}
+#endif
 								 //force 0 at the end of the string
 					if(ss->lbuf >= ss->rlen)
 						ss->buf[ss->rlen] = 0;

@@ -334,7 +334,6 @@ int setup_switch (int frontend_fd, transponder *tp)
 		hiband = 1;
 	}
 	
-#ifndef AXE
 	if(tp->switch_type == SWITCH_UNICABLE)
 	{
 		freq = send_unicable(frontend_fd, freq / 1000, diseqc, pol, hiband, tp->uslot, tp->ufreq);
@@ -348,10 +347,8 @@ int setup_switch (int frontend_fd, transponder *tp)
 		else 
 			LOGL(3, "Skip sending diseqc commands since the switch position doesn't need to be changed: pol %d, hiband %d, switch position %d", pol, hiband, diseqc);
 	}
-#else
+#ifdef AXE
 	LOGL(3, "axe_fe: reset for fd %d", frontend_fd);
-	if (ioctl(frontend_fd, FE_SET_VOLTAGE, pol ? SEC_VOLTAGE_18 : SEC_VOLTAGE_13) == -1)
-		LOG("axe_fd FE_SET_VOLTAGE failed for fd %d: %s", frontend_fd, strerror(errno));
 	if (axe_fe_reset(frontend_fd) < 0)
 		LOG("axe_fe: RESET failed for fd %d: %s", frontend_fd, strerror(errno));
 	if (axe_fe_thread_up(frontend_fd, hiband | (pol << 1)) < 0)
