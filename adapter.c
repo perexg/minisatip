@@ -33,6 +33,9 @@
 #include "socketworks.h"
 #include "dvb.h"
 #include "adapter.h"
+#ifdef AXE
+#include "axe.h"
+#endif
 
 adapter a[MAX_ADAPTERS];
 extern struct struct_opts opts;
@@ -210,6 +213,22 @@ close_adapter (int na)
 	mark_pids_deleted (na, -1, NULL);
 	update_pids (na);
 	//      if(a[na].dmx>0)close(a[na].dmx);
+#ifdef AXE
+	if (a[na].fe > 0) {
+		int i;
+		axe_fe_reset(a[na].fe);
+		for (i = 0; i < 4; i++)
+			if (i != na && a[i].fe > 0) break;
+		if (i >= 4) {
+			LOG("AXE standby");
+			axe_fe_standby(a[na].fe, -1);
+		} else {
+			LOG("AXE standby: adapter %d busy, keeping", i);
+		}
+		ioctl(a[na].fe, FE_SET_VOLTAGE, SEC_VOLTAGE_OFF);
+		a[na].tp.old_diseqc = a[na].tp.old_pol = a[na].tp.old_hiband = -1;
+	}
+#endif
 	if (a[na].fe > 0)
 		close (a[na].fe);
 	if (a[na].sock >= 0)
@@ -382,7 +401,30 @@ close_adapter_for_stream (int sid, int aid)
 								 // delete the attached PIDs as well
 	mark_pids_deleted (aid, sid, NULL);
 	update_pids (aid);
-//	if (a[aid].sid_cnt == 0) 
+#ifdef AXE
+	if (a[aid].sid_cnt == 0) {
+		int i;
+		char buf[50];
+		axe_fe_reset(a[aid].fe);
+		for (i = 0; i < 4; i++)
+			if (i != aid && a[i].sid_cnt > 0) break;
+		if (i >= 4) {
+			LOG("AXE standby");
+			axe_fe_standby(a[aid].fe, -1);
+		} else {
+			LOG("AXE standby: adapter %d busy, keeping", i);
+		}
+		ioctl(a[aid].fe, FE_SET_VOLTAGE, SEC_VOLTAGE_OFF);
+		a[aid].tp.old_diseqc = a[aid].tp.old_pol = a[aid].tp.old_hiband = -1;
+		sockets_del(a[aid].sock);
+		sprintf (buf, "/dev/axe/demuxts-%d", a[i].pa);
+		a[aid].dvr = open (buf, O_RDONLY | O_NONBLOCK);
+		a[i].sock =
+			sockets_add (a[i].dvr, NULL, i, TYPE_DVR, (socket_action) read_dmx,
+			(socket_action) close_adapter_for_socket, (socket_action ) adapter_timeout);
+	}
+#endif
+//	if (a[aid].sid_cnt == 0)
 //		close_adapter (aid);
 }
 
