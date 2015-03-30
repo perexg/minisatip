@@ -742,7 +742,11 @@ describe_adapter (int sid, int aid)
 	memset (dad, 0, sizeof (dad));
 	x = 0;
 								 // do just max 3 signal check 1s after tune
+#ifndef AXE
 	if (use_ad && ((ad->status <= 0 && ad->status_cnt<8 && ad->status_cnt++>4) || opts.force_scan))
+#else
+	if (use_ad && (ad->status_cnt++ & 3) == 0)
+#endif
 	{
 		int new_gs = 1;
 		ts = getTick ();
@@ -759,11 +763,20 @@ describe_adapter (int sid, int aid)
 		if (ad->max_snr <= ad->snr) ad->max_snr = (ad->snr>0)?ad->snr:1;
 		LOG ("get_signal%s took %d ms for adapter %d handle %d (status: %d, ber: %d, strength:%d, snr: %d, max_strength: %d, max_snr: %d %d)",
 			new_gs?"":"_new", getTick () - ts, aid, ad->fe, ad->status, ad->ber, ad->strength, ad->snr, ad->max_strength, ad->max_snr, opts.force_scan);
+#ifndef AXE
 		if(new_gs)
 		{
 			ad->strength = ad->strength * 255 / ad->max_strength;
 			ad->snr = ad->snr * 15 / ad->max_snr;
 		}
+#else
+		ad->strength = ad->strength * 240 / 9000;
+		if (ad->strength > 240)
+			ad->strength = 240;
+		ad->snr = ad->snr * 15 / 54000;
+		if (ad->snr > 15)
+			ad->snr = 15;
+#endif
 	}
 	if(use_ad)
 	{
@@ -773,14 +786,14 @@ describe_adapter (int sid, int aid)
 	}
 	if (t->sys == SYS_DVBS || t->sys == SYS_DVBS2)
 		sprintf (dad, "ver=1.0;src=%d;tuner=%d,%d,%d,%d,%d,%s,%s,%s,%s,%s,%d,%s;pids=",
-			t->diseqc, aid, strength, status, snr, t->freq / 1000, get_pol(t->pol), get_modulation(t->mtype), 
+			t->diseqc, aid+1, strength, status, snr, t->freq / 1000, get_pol(t->pol), get_modulation(t->mtype), 
 			get_pilot(t->plts), get_rolloff(t->ro), get_delsys(t->sys), t->sr / 1000, get_fec(t->fec));
 	else if (t->sys == SYS_DVBT || t->sys == SYS_DVBT2)
 		sprintf (dad, "ver=1.1;src=%d;tuner=%d,%d,%d,%d,%.2f,%d,%s,%s,%s,%s,%s,%d,%d,%d;pids=",
-			t->diseqc, aid, strength, status, snr, (double) t->freq/1000, t->bw, get_delsys(t->sys), get_tmode(t->tmode), get_modulation(t->mtype), get_gi(t->gi),
+			t->diseqc, aid+1, strength, status, snr, (double) t->freq/1000, t->bw, get_delsys(t->sys), get_tmode(t->tmode), get_modulation(t->mtype), get_gi(t->gi),
 			get_fec(t->fec), t->plp, t->t2id, t->sm);
 	else  sprintf (dad, "ver=1.2;src=%d;tuner=%d,%d,%d,%d,%.2f,8,%s,%s,%d,%d,%d,%d,%d;pids=",
-                        t->diseqc, aid, strength, status, snr, (double )t->freq/1000, get_delsys(t->sys), get_modulation(t->mtype), t->sr,
+                        t->diseqc, aid+1, strength, status, snr, (double )t->freq/1000, get_delsys(t->sys), get_modulation(t->mtype), t->sr,
 						t->c2tft, t->ds, t->plp, t->inversion);
 	for (i = 0; i < MAX_PIDS; i++)
 		if (use_ad && ad->pids[i].flags == 1)
