@@ -654,8 +654,13 @@ fe_delivery_system_t
 dvb_delsys (int aid, int fd, fe_delivery_system_t *sys)
 {
 #ifdef AXE
-	LOG ("Delivery System DVB-S2 (AXE)");
-	return sys[0] = SYS_DVBS2;
+	int i;
+	LOG ("Delivery System DVB-S/DVB-S2 (AXE)");
+	for(i = 0 ; i < 10 ; i ++)
+		sys[i] = 0;
+	sys[0] = SYS_DVBS;
+	sys[1] = SYS_DVBS2;
+	return SYS_DVBS2;
 #else
 	int i, res, rv = 0;
 	struct dvb_frontend_info fe_info;
