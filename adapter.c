@@ -29,6 +29,7 @@
 #include <linux/dvb/dmx.h>
 #include <poll.h>
 #include <linux/ioctl.h>
+#include <errno.h>
 
 #include "socketworks.h"
 #include "dvb.h"
@@ -69,6 +70,13 @@ find_adapters ()
 			if (na == MAX_ADAPTERS)
 				return;
 		}
+#ifdef AXE
+		if (i < 4 && fd < 0) {
+			LOGL(0, "AXE - cannot open %s: %i", buf, errno);
+			sleep(60);
+			exit(239);
+		}
+#endif
 	}
 	for (na; na < MAX_ADAPTERS; na++)
 		a[na].pa = a[na].fn = -1;
