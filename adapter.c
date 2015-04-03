@@ -226,15 +226,17 @@ close_adapter (int na)
 		int i;
 		axe_fe_reset(a[na].fe);
 		for (i = 0; i < 4; i++)
-			if (i != na && a[i].fe > 0) break;
+			if (i != na && a[i].sid_cnt > 0) break;
 		if (i >= 4) {
 			LOG("AXE standby");
-			axe_fe_standby(a[na].fe, -1);
+			for (i = 0; i < 4; i++) {
+				axe_fe_standby(a[i].fe, -1);
+				ioctl(a[i].fe, FE_SET_VOLTAGE, SEC_VOLTAGE_OFF);
+				a[i].tp.old_diseqc = a[i].tp.old_pol = a[i].tp.old_hiband = -1;
+			}
 		} else {
-			LOG("AXE standby: adapter %d busy, keeping", i);
+			LOG("AXE standby: adapter %d busy (%d), keeping", i, a[i].sid_cnt);
 		}
-		ioctl(a[na].fe, FE_SET_VOLTAGE, SEC_VOLTAGE_OFF);
-		a[na].tp.old_diseqc = a[na].tp.old_pol = a[na].tp.old_hiband = -1;
 	}
 #endif
 	if (a[na].fe > 0)
@@ -418,12 +420,14 @@ close_adapter_for_stream (int sid, int aid)
 			if (i != aid && a[i].sid_cnt > 0) break;
 		if (i >= 4) {
 			LOG("AXE standby");
-			axe_fe_standby(a[aid].fe, -1);
+			for (i = 0; i < 4; i++) {
+				axe_fe_standby(a[i].fe, -1);
+				ioctl(a[i].fe, FE_SET_VOLTAGE, SEC_VOLTAGE_OFF);
+				a[i].tp.old_diseqc = a[i].tp.old_pol = a[i].tp.old_hiband = -1;
+			}
 		} else {
-			LOG("AXE standby: adapter %d busy, keeping", i);
+			LOG("AXE standby: adapter %d busy (%d), keeping", i, a[i].sid_cnt);
 		}
-		ioctl(a[aid].fe, FE_SET_VOLTAGE, SEC_VOLTAGE_OFF);
-		a[aid].tp.old_diseqc = a[aid].tp.old_pol = a[aid].tp.old_hiband = -1;
 		sockets_del(a[aid].sock);
 		sprintf (buf, "/dev/axe/demuxts-%d", a[i].pa);
 		a[aid].dvr = open (buf, O_RDONLY | O_NONBLOCK);

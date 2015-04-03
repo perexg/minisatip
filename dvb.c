@@ -219,6 +219,29 @@ msleep (uint32_t msec)
 		;
 }
 
+#ifdef AXE
+void axe_wakeup(int voltage)
+{
+	int i;
+	adapter *a;
+	for (i = 0; i < 4; i++) {
+		a = get_adapter(i);
+		if (a == NULL || a->force_disable)
+			continue;
+		if (a->tp.old_pol >= 0)
+			return;
+	}
+	LOG("AXE wakeup");
+	for (i = 0; i < 4; i++) {
+		a = get_adapter(i);
+		if (a == NULL || a->force_disable)
+			continue;
+		if (ioctl(a->fe, FE_SET_VOLTAGE, voltage) == -1)
+			LOG("axe_wakeup: FE_SET_VOLTAGE failed fd %d: %s", a->fe, strerror(errno));
+	}
+}
+#endif
+
 int send_diseqc(int fd, int pos, int pol, int hiband)
 {
 	struct dvb_diseqc_master_cmd cmd = {
@@ -233,6 +256,9 @@ int send_diseqc(int fd, int pos, int pol, int hiband)
 	
 	if (ioctl(fd, FE_SET_TONE, SEC_TONE_OFF) == -1)
 		LOG("send_diseqc: FE_SET_TONE failed for fd %d: %s", fd, strerror(errno));
+#ifdef AXE
+	axe_wakeup(pol ? SEC_VOLTAGE_18 : SEC_VOLTAGE_13);
+#endif
 	if (ioctl(fd, FE_SET_VOLTAGE, pol ? SEC_VOLTAGE_18 : SEC_VOLTAGE_13) == -1)
 		LOG("send_diseqc: FE_SET_VOLTAGE failed for fd %d: %s", fd, strerror(errno));
 
@@ -266,6 +292,9 @@ int send_unicable(int fd, int freq, int pos, int pol, int hiband, int slot, int 
 
 	LOGL(3, "send_unicable fd %d, freq %d, ufreq %d, pos = %d, pol = %d, hiband = %d, slot %d, diseqc => %02x %02x %02x %02x %02x",
                   fd, freq, ufreq, pos, pol, hiband, slot, cmd.msg[0], cmd.msg[1], cmd.msg[2], cmd.msg[3], cmd.msg[4]);
+#ifdef AXE
+	axe_wakeup(SEC_VOLTAGE_13);
+#endif
 	if (ioctl(fd, FE_SET_VOLTAGE, SEC_VOLTAGE_13) == -1)
 		LOG("send_unicable: pre voltage  SEC_VOLTAGE_13 failed for fd %d: %s", fd, strerror(errno));
 	msleep(15);
@@ -299,6 +328,9 @@ int send_jess(int fd, int freq, int pos, int pol, int hiband, int slot, int ufre
 	LOGL(3, "send_jess fd %d, freq %d, ufreq %d, pos = %d, pol = %d, hiband = %d, slot %d, diseqc => %02x %02x %02x %02x %02x",
                   fd, freq, ufreq, pos, pol, hiband, slot, cmd.msg[0], cmd.msg[1], cmd.msg[2], cmd.msg[3], cmd.msg[4]);
 
+#ifdef AXE
+	axe_wakeup(SEC_VOLTAGE_13);
+#endif
 	if (ioctl(fd, FE_SET_VOLTAGE, SEC_VOLTAGE_13) == -1)
 		LOG("send_jess: pre voltage  SEC_VOLTAGE_13 failed for fd %d: %s", fd, strerror(errno));
 	msleep(15);
