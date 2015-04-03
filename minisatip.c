@@ -536,6 +536,9 @@ read_rtsp (sockets * s)
 		return 0;
 	}
 
+#ifdef AXE
+        axe_set_network_led(1);
+#endif
 	rlen = s->rlen;
 	s->rlen = 0;
 
@@ -760,6 +763,9 @@ read_http (sockets * s)
 		return 0;
 	}
 
+#ifdef AXE
+        axe_set_network_led(1);
+#endif
 	rlen = s->rlen;
 	s->rlen = 0;
 	
@@ -915,6 +921,9 @@ ssdp_reply (sockets * s)
 		return 0;
 	}
 
+#ifdef AXE
+        axe_set_network_led(1);
+#endif
 	// not my uuid
 	LOG("Received SSDP packet from %s:%d -> handle %d", inet_ntoa(s->sa.sin_addr), ntohs(s->sa.sin_port), s->sock);
 	LOGL(3, "%s", s->buf);

@@ -35,6 +35,7 @@
 #include "dvb.h"
 #include "adapter.h"
 #ifdef AXE
+#define AXE_MAIN 1
 #include "axe.h"
 #endif
 
@@ -71,6 +72,10 @@ find_adapters ()
 				return;
 		}
 #ifdef AXE
+		if (i == 0)
+			axe_set_network_led(0);
+		if (i < 4)
+			axe_set_tuner_led(i + 1, 0);
 		if (i < 4 && fd < 0) {
 			LOGL(0, "AXE - cannot open %s: %i", buf, errno);
 			sleep(60);
@@ -416,6 +421,7 @@ close_adapter_for_stream (int sid, int aid)
 		int i;
 		char buf[50];
 		axe_fe_reset(a[aid].fe);
+		axe_set_tuner_led(aid + 1, 0);
 		for (i = 0; i < 4; i++)
 			if (i != aid && a[i].sid_cnt > 0) break;
 		if (i >= 4) {
@@ -489,6 +495,10 @@ int tune (int aid, int sid)
 		ad->tp.switch_type = ad->switch_type;
 		ad->tp.uslot = ad->uslot;
 		ad->tp.ufreq = ad->ufreq;
+
+#ifdef AXE
+                axe_set_tuner_led(aid + 1, 1);
+#endif
 		
 		rv = tune_it_s2 (ad->fe, &ad->tp);
 		a[aid].status = 0;

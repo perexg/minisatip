@@ -56,4 +56,58 @@ static inline int axe_dmxts_remove_pid(int fd, __u16 pid)
   return ioctl(fd, DMXTS_REMOVE_PID, &pid);
 }
 
+#ifdef AXE_MAIN
+
+int axe_fp_fd = -1;
+
+static inline axe_fp_fd_open(void)
+{
+  if (axe_fp_fd < 0)
+    axe_fp_fd = open("/dev/axe/fp-0", O_WRONLY);
+}
+
+static inline axe_fp_fd_write(const char *s)
+{
+  const char *b;
+  size_t len;
+  ssize_t r;
+
+  axe_fp_fd_open();
+  len = strlen(b = s);
+  while (len > 0) {
+    r = write(axe_fp_fd, b, len);
+    if (r > 0) {
+      len -= r;
+      b += r;
+    }
+  }
+}
+
+void axe_set_tuner_led(int tuner, int on)
+{
+  static int state = -1;
+  char buf[16];
+  if (state != on) {
+    sprintf(buf, "T%d_LED %d\n", tuner, on ? 1 : 0);
+    axe_fp_fd_write(buf);
+    state = on;
+  }
+}
+
+void axe_set_network_led(int on)
+{
+  static int state = -1;
+  if (state != on) {
+    axe_fp_fd_write(on ? "NET_LED 1\n" : "NET_LED 0\n");
+    state = on;
+  }
+}
+
+#else
+
+void axe_set_tuner_led(int tuner, int on);
+void axe_set_network_led(int on);
+
+#endif
+
 #endif
