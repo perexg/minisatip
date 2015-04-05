@@ -368,7 +368,15 @@ int setup_switch (int frontend_fd, transponder *tp)
 	
 	if(tp->switch_type == SWITCH_UNICABLE)
 	{
+#ifdef AXE
+		adapter *a = get_adapter(0);
+		if (a)
+			freq = send_unicable(a->fe, freq / 1000, diseqc, pol, hiband, tp->uslot, tp->ufreq);
+		else
+			LOGL(3, "axe unicable setup: unable to find adapter 0");
+#else
 		freq = send_unicable(frontend_fd, freq / 1000, diseqc, pol, hiband, tp->uslot, tp->ufreq);
+#endif
 	}else if(tp->switch_type == SWITCH_JESS)
 	{
 		freq = send_jess(frontend_fd, freq / 1000, diseqc, pol, hiband, tp->uslot, tp->ufreq);
