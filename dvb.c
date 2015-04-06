@@ -396,11 +396,23 @@ int setup_switch (int frontend_fd, transponder *tp)
 			LOGL(3, "Skip sending diseqc commands since the switch position doesn't need to be changed: pol %d, hiband %d, switch position %d", pol, hiband, diseqc);
 	}
 #ifdef AXE
-	LOGL(3, "axe_fe: reset for fd %d up %d", frontend_fd, (hiband << 1) | pol);
+	{
+	int aid = 0;
+	if (tp->switch_type != SWITCH_UNICABLE && tp->switch_type != SWITCH_JESS) {
+		for (aid = 0; aid < 4; aid++) {
+			adapter *a = get_adapter(aid);
+			if (a && a->fe == frontend_fd)
+				break;
+		}
+		if (aid >= 4)
+			LOG("axe_fe: unknown adapter for fd %d", frontend_fd);
+	}
+	LOGL(3, "axe_fe: reset for fd %d adapter %d", frontend_fd, aid);
 	if (axe_fe_reset(frontend_fd) < 0)
 		LOG("axe_fe: RESET failed for fd %d: %s", frontend_fd, strerror(errno));
-	if (axe_fe_thread_up(frontend_fd, (hiband << 1) | pol) < 0)
+	if (aid < 4 && axe_fe_thread_up(frontend_fd, aid))
 		LOG("axe_fe: THREAD UP failed for fd %d: %s", frontend_fd, strerror(errno));
+	}
 #endif
 	
 	tp->old_pol = pol;
