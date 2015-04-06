@@ -388,10 +388,10 @@ int setup_switch (int frontend_fd, transponder *tp)
 			LOGL(3, "Skip sending diseqc commands since the switch position doesn't need to be changed: pol %d, hiband %d, switch position %d", pol, hiband, diseqc);
 	}
 #ifdef AXE
-	LOGL(3, "axe_fe: reset for fd %d", frontend_fd);
+	LOGL(3, "axe_fe: reset for fd %d up %d", frontend_fd, (hiband << 1) | pol);
 	if (axe_fe_reset(frontend_fd) < 0)
 		LOG("axe_fe: RESET failed for fd %d: %s", frontend_fd, strerror(errno));
-	if (axe_fe_thread_up(frontend_fd, hiband | (pol << 1)) < 0)
+	if (axe_fe_thread_up(frontend_fd, (hiband << 1) | pol) < 0)
 		LOG("axe_fe: THREAD UP failed for fd %d: %s", frontend_fd, strerror(errno));
 #endif
 	
