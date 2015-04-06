@@ -435,11 +435,7 @@ close_adapter_for_stream (int sid, int aid)
 			LOG("AXE standby: adapter %d busy (%d), keeping", i, a[i].sid_cnt);
 		}
 		sockets_del(a[aid].sock);
-		sprintf (buf, "/dev/axe/demuxts-%d", a[i].pa);
-		a[aid].dvr = open (buf, O_RDONLY | O_NONBLOCK);
-		a[i].sock =
-			sockets_add (a[i].dvr, NULL, i, TYPE_DVR, (socket_action) read_dmx,
-			(socket_action) close_adapter_for_socket, (socket_action ) adapter_timeout);
+		a[aid].sock = -1;
 	}
 #endif
 //	if (a[aid].sid_cnt == 0)
@@ -499,7 +495,6 @@ int tune (int aid, int sid)
 #ifdef AXE
                 axe_set_tuner_led(aid + 1, 1);
 #endif
-		
 		rv = tune_it_s2 (ad->fe, &ad->tp);
 		a[aid].status = 0;
 		a[aid].status_cnt = 0;
@@ -508,6 +503,18 @@ int tune (int aid, int sid)
 			close_streams_for_adapter (aid, sid);
 			update_pids (aid);
 		}
+#ifdef AXE
+		if (a[aid].dvr < 0) {
+			char buf[32];
+			sprintf (buf, "/dev/axe/demuxts-%d", a[i].pa);
+			a[aid].dvr = open (buf, O_RDONLY | O_NONBLOCK);
+			a[i].sock =
+				sockets_add (a[i].dvr, NULL, i, TYPE_DVR, (socket_action) read_dmx,
+				(socket_action) close_adapter_for_socket, (socket_action ) adapter_timeout);
+		}
+		if (rv < 0)
+			axe_set_tuner_led(aid + 1, 0);
+#endif
 	}
 	else
 		LOG ("not tuning for SID %d (do_tune=%d, master_sid=%d)", sid,
