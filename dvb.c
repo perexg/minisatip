@@ -401,6 +401,7 @@ int setup_switch (int frontend_fd, transponder *tp)
 	if (tp->switch_type != SWITCH_UNICABLE && tp->switch_type != SWITCH_JESS) {
 		for (aid = 0; aid < 4; aid++) {
 			adapter *a = get_adapter(aid);
+			LOGL(3, "axe adapter %i fe fd %d", aid, a->fe);
 			if (a && a->fe == frontend_fd)
 				break;
 		}
@@ -694,7 +695,7 @@ int del_filters (int fd, int pid)
 	if ((fd & 0xffff) != pid)
 		LOG_AND_RETURN(0, "AXE PID remove on an invalid handle %d, pid %d", fd, pid);
 	if (axe_dmxts_remove_pid(a->dvr, pid) < 0)
-		LOG ("AXE PID removew failed on PID %d ADAPTER %d: %s", pid, a->pa, strerror (errno))
+		LOG ("AXE PID remove failed on PID %d ADAPTER %d: %s", pid, a->pa, strerror (errno))
 			else
 			LOG ("clearing filters on PID %d ADAPTER %d", pid, a->pa);
 #else

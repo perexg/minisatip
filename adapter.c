@@ -416,30 +416,8 @@ close_adapter_for_stream (int sid, int aid)
 								 // delete the attached PIDs as well
 	mark_pids_deleted (aid, sid, NULL);
 	update_pids (aid);
-#ifdef AXE
-	if (a[aid].sid_cnt == 0) {
-		int i;
-		char buf[50];
-		axe_fe_reset(a[aid].fe);
-		axe_set_tuner_led(aid + 1, 0);
-		for (i = 0; i < 4; i++)
-			if (i != aid && a[i].sid_cnt > 0) break;
-		if (i >= 4) {
-			LOG("AXE standby");
-			for (i = 0; i < 4; i++) {
-				axe_fe_standby(a[i].fe, -1);
-				ioctl(a[i].fe, FE_SET_VOLTAGE, SEC_VOLTAGE_OFF);
-				a[i].tp.old_diseqc = a[i].tp.old_pol = a[i].tp.old_hiband = -1;
-			}
-		} else {
-			LOG("AXE standby: adapter %d busy (%d), keeping", i, a[i].sid_cnt);
-		}
-		sockets_del(a[aid].sock);
-		a[aid].sock = -1;
-	}
-#endif
-//	if (a[aid].sid_cnt == 0)
-//		close_adapter (aid);
+	if (a[aid].sid_cnt == 0)
+		close_adapter (aid);
 }
 
 
@@ -482,7 +460,7 @@ update_pids (int aid)
 int tune (int aid, int sid)
 {
 	adapter *ad = get_adapter(aid);
-	int i, rv = 0;
+	int rv = 0;
 	
 	if(!ad) return -400;
 	ad->last_sort = getTick ();
@@ -504,14 +482,6 @@ int tune (int aid, int sid)
 			update_pids (aid);
 		}
 #ifdef AXE
-		if (a[aid].dvr < 0) {
-			char buf[32];
-			sprintf (buf, "/dev/axe/demuxts-%d", a[i].pa);
-			a[aid].dvr = open (buf, O_RDONLY | O_NONBLOCK);
-			a[i].sock =
-				sockets_add (a[i].dvr, NULL, i, TYPE_DVR, (socket_action) read_dmx,
-				(socket_action) close_adapter_for_socket, (socket_action ) adapter_timeout);
-		}
 		if (rv < 0)
 			axe_set_tuner_led(aid + 1, 0);
 #endif
