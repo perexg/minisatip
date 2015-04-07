@@ -799,7 +799,7 @@ describe_adapter (int sid, int aid)
 			ad->snr = ad->snr * 15 / ad->max_snr;
 		}
 #else
-		ad->strength = ad->strength * 240 / 9000;
+		ad->strength = ad->strength * 240 / 24000;
 		if (ad->strength > 240)
 			ad->strength = 240;
 		ad->snr = ad->snr * 15 / 54000;
