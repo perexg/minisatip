@@ -26,7 +26,7 @@ struct fe_frontend_status {
 #define FE_FRONTEND_STANDBY     _IOW('o', 91, __u32)
 #define FE_FRONTEND_RESET	_IO('o', 93)
 #define FE_FRONTEND_STATUS      _IOR('o', 96, fe_frontend_status_t)
-#define FE_FRONTEND_THREAD_UP	_IOW('o', 97, __u8)
+#define FE_FRONTEND_INPUT	_IOW('o', 97, __u8)
 
 static inline int axe_fe_standby(int fd, __u32 stdby)
 {
@@ -38,9 +38,9 @@ static inline int axe_fe_reset(int fd)
   return ioctl(fd, FE_FRONTEND_RESET, 0x54);
 }
 
-static inline int axe_fe_thread_up(int fd, __u8 up)
+static inline int axe_fe_input(int fd, __u8 in)
 {
-  return ioctl(fd, FE_FRONTEND_THREAD_UP, &up);
+  return ioctl(fd, FE_FRONTEND_INPUT, &in);
 }
 
 #define DMXTS_ADD_PID     _IOW('o', 1, __u16)

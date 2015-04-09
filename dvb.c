@@ -411,8 +411,8 @@ int setup_switch (int frontend_fd, transponder *tp)
 	LOGL(3, "axe_fe: reset for fd %d adapter %d", frontend_fd, aid);
 	if (axe_fe_reset(frontend_fd) < 0)
 		LOG("axe_fe: RESET failed for fd %d: %s", frontend_fd, strerror(errno));
-	if (aid < 4 && axe_fe_thread_up(frontend_fd, aid))
-		LOG("axe_fe: THREAD UP failed for fd %d: %s", frontend_fd, strerror(errno));
+	if (aid < 4 && axe_fe_input(frontend_fd, aid))
+		LOG("axe_fe: INPUT failed for fd %d: %s", frontend_fd, strerror(errno));
 	}
 #endif
 	
