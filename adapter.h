@@ -45,6 +45,7 @@ typedef struct struct_adapter
 	int switch_type;
 	int uslot; // unicable/jess slot
 	int ufreq; // unicable/jess frequency	
+	int slave;
 } adapter;
 
 int init_hw ();
@@ -65,6 +66,7 @@ void dump_pids (int aid);
 void sort_pids (int aid);
 void enable_adapters(char *o);
 void set_unicable_adapters(char *o, int type);
+void set_link_adapters(char *o);
 
 int delsys_match(adapter *ad, int del_sys);
 

@@ -197,7 +197,7 @@ init_hw ()
 		a[i].sock =
 			sockets_add (a[i].dvr, NULL, i, TYPE_DVR, (socket_action) read_dmx,
 			(socket_action) close_adapter_for_socket, (socket_action ) adapter_timeout);
-		memset (a[i].buf, 0, ADAPTER_BUFFER + 1);
+		//memset (a[i].buf, 0, ADAPTER_BUFFER + 1);
 		set_socket_buffer (a[i].sock, a[i].buf, ADAPTER_BUFFER);
 		sockets_timeout (a[i].sock, 60000);
 		LOG ("done opening adapter %i fe_sys %d", i, a[i].tp.sys);
@@ -920,6 +920,31 @@ void set_unicable_adapters(char *o, int type)
 	}
 }
 
+void set_link_adapters(char *o)
+{
+	int i, la, a_id, b_id;
+	char buf[100], *arg[20], *sep1;
+
+	strncpy(buf, o, sizeof(buf)-1);
+	buf[sizeof(buf)-1] = '\0';
+	la = split(arg, buf, sizeof(arg), ',');
+	for (i=0; i<la; i++)
+	{
+		a_id=map_intd(arg[i], NULL, -1);
+		if (a_id < 0 || a_id >= MAX_ADAPTERS)
+			continue;
+		sep1 = strchr(arg[i], ':');
+		if (!sep1)
+			continue;
+		b_id=map_intd(sep1 + 1, NULL, -1);
+		if (b_id < 0 || b_id >= MAX_ADAPTERS)
+			continue;
+		if (a_id == b_id || a[a_id].slave)
+			continue;
+		a[b_id].slave = a_id + 1;
+		LOG("Setting adapter %d as master for adapter %d", a_id, b_id);
+	}
+}
 
 int delsys_match(adapter *ad, int del_sys)
 {

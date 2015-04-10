@@ -356,7 +356,7 @@ int setup_switch (int frontend_fd, transponder *tp)
 	int diseqc = (tp->diseqc > 0)? tp->diseqc - 1: 0;
 	int freq = tp->freq;
 	int pol = (tp->pol - 1) & 1;
-	
+
 	if (freq < SLOF)
 	{
 		freq = (freq - LOF1);
@@ -366,25 +366,97 @@ int setup_switch (int frontend_fd, transponder *tp)
 		hiband = 1;
 	}
 	
+#ifdef AXE
+	adapter *ad, *ad2, *adm;
+	int input = 0, aid;
+
+	if (tp->switch_type != SWITCH_UNICABLE && tp->switch_type != SWITCH_JESS) {
+		for (aid = 0; aid < 4; aid++) {
+			ad = get_adapter(aid);
+			LOGL(3, "axe adapter %i fe fd %d", aid, ad->fe);
+			if (ad && ad->fe == frontend_fd)
+				break;
+		}
+		if (aid >= 4) {
+			LOG("axe_fe: unknown adapter for fd %d", frontend_fd);
+			return 0;
+		}
+		input = aid;
+		if (ad && !opts.quattro) {
+			adm = get_adapter(ad->slave ? ad->slave - 1 : ad->pa);
+			if (adm == NULL) {
+				LOG("axe_fe: unknown master adapter %d", input);
+				return 0;
+			}
+			if (adm->tp.old_pol >= 0) {
+				for (aid = 0; aid < 4; aid++) {
+					ad2 = get_adapter(aid);
+					if (ad == ad2) continue;
+					if (ad2->slave && ad2->slave - 1 != adm->pa) continue;
+					if (!ad2->slave && ad2 != adm) continue;
+					if (ad2->sid_cnt > 0) break;
+				}
+				if (adm != ad && aid < 4 &&
+				    (adm->tp.old_pol != pol ||
+				     adm->tp.old_hiband != hiband ||
+				     adm->tp.old_diseqc != diseqc))
+					return 0;
+			}
+			if (ad->slave) {
+				input = ad->slave - 1;
+				adm = get_adapter(input);
+				if (adm == NULL) {
+					LOG("axe_fe: unknown master adapter %d", input);
+					return 0;
+				}
+				if(adm->tp.old_pol != pol ||
+				   adm->tp.old_hiband != hiband ||
+				   adm->tp.old_diseqc != diseqc) {
+					send_diseqc(adm->fe, diseqc, pol, hiband);
+					adm->tp.old_pol = pol;
+					adm->tp.old_hiband = hiband;
+					adm->tp.old_diseqc = diseqc;
+				}
+				goto axe;
+			}
+		}
+		if (ad && opts.quattro) {
+			input = ((hiband ^ 1) << 1) | (pol ^ 1);
+			adm = get_adapter(input);
+			if (adm == NULL) {
+				LOG("axe_fe: unknown master adapter %d", input);
+				return 0;
+			}
+			if(adm->tp.old_pol != pol || adm->tp.old_hiband != hiband) {
+				send_diseqc(adm->fe, 0, pol, hiband);
+				adm->tp.old_pol = pol;
+				adm->tp.old_hiband = hiband;
+				adm->tp.old_diseqc = 0;
+			}
+		}
+	} else {
+		input = opts.axe_unicinp;
+		ad = get_adapter(input);
+		if (ad == NULL) {
+			LOGL(3, "axe setup: unable to find adapter %d", input);
+			return 0;
+		}
+	}
+#endif
+
 	if(tp->switch_type == SWITCH_UNICABLE)
 	{
 #ifdef AXE
-		adapter *a = get_adapter(0);
-		if (a)
-			freq = send_unicable(a->fe, freq / 1000, diseqc, pol, hiband, tp->uslot, tp->ufreq);
-		else
-			LOGL(3, "axe unicable setup: unable to find adapter 0");
+		if (ad)
+			freq = send_unicable(ad->fe, freq / 1000, diseqc, pol, hiband, tp->uslot, tp->ufreq);
 #else
 		freq = send_unicable(frontend_fd, freq / 1000, diseqc, pol, hiband, tp->uslot, tp->ufreq);
 #endif
 	}else if(tp->switch_type == SWITCH_JESS)
 	{
 #ifdef AXE
-		adapter *a = get_adapter(0);
-		if (a)
-			freq = send_jess(a->fe, freq / 1000, diseqc, pol, hiband, tp->uslot, tp->ufreq);
-		else
-			LOGL(3, "axe jess setup: unable to find adapter 0");
+		if (ad)
+			freq = send_jess(ad->fe, freq / 1000, diseqc, pol, hiband, tp->uslot, tp->ufreq);
 #else
 		freq = send_jess(frontend_fd, freq / 1000, diseqc, pol, hiband, tp->uslot, tp->ufreq);
 #endif
@@ -396,24 +468,14 @@ int setup_switch (int frontend_fd, transponder *tp)
 			LOGL(3, "Skip sending diseqc commands since the switch position doesn't need to be changed: pol %d, hiband %d, switch position %d", pol, hiband, diseqc);
 	}
 #ifdef AXE
-	{
-	int aid = 0;
-	if (tp->switch_type != SWITCH_UNICABLE && tp->switch_type != SWITCH_JESS) {
-		for (aid = 0; aid < 4; aid++) {
-			adapter *a = get_adapter(aid);
-			LOGL(3, "axe adapter %i fe fd %d", aid, a->fe);
-			if (a && a->fe == frontend_fd)
-				break;
-		}
-		if (aid >= 4)
-			LOG("axe_fe: unknown adapter for fd %d", frontend_fd);
-	}
-	LOGL(3, "axe_fe: reset for fd %d adapter %d", frontend_fd, aid);
+axe:
+	LOGL(3, "axe_fe: reset for fd %d adapter %d input %d", frontend_fd, ad ? ad->pa : -1, input);
 	if (axe_fe_reset(frontend_fd) < 0)
 		LOG("axe_fe: RESET failed for fd %d: %s", frontend_fd, strerror(errno));
-	if (aid < 4 && axe_fe_input(frontend_fd, aid))
-		LOG("axe_fe: INPUT failed for fd %d: %s", frontend_fd, strerror(errno));
-	}
+	if (axe_fe_input(frontend_fd, input))
+		LOG("axe_fe: INPUT failed for fd %d input %d: %s", frontend_fd, input, strerror(errno));
+	if (opts.quattro)
+		return freq;
 #endif
 	
 	tp->old_pol = pol;
@@ -536,6 +598,8 @@ tune_it_s2 (int fd_frontend, transponder * tp)
 				tp->mtype = QPSK;
 			bpol = getTick();
 			if_freq = setup_switch (fd_frontend, tp);
+			if (!if_freq)
+				return -404;
 			p = &dvbs2_cmdseq;
 			p->props[DELSYS].u.data = tp->sys;
 			p->props[MODULATION].u.data = tp->mtype;

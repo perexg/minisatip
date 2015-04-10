@@ -31,6 +31,9 @@ void set_options (int argc, char *argv[]);
 #define UNICABLE_OPT 'u'
 #define JESS_OPT 'j'
 #define SYSLOG_OPT 'g'
+#define LINK_OPT 'L'
+#define QUATTRO_OPT 'Q'
+#define AXE_UNICINP_OPT 'X'
 
 #define PID_FILE "/var/run/minisatip.pid"
 struct struct_opts
@@ -52,6 +55,8 @@ struct struct_opts
 	int dvr;
 	int force_scan;
 	int file_line;
+	int quattro;
+	int axe_unicinp;
 	char *last_log;	
 	char playlist[200];
 };

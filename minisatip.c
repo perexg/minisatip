@@ -68,6 +68,9 @@ usage ()
 		-u unicable_string: defines the unicable adapters (A) and their slot (S) and frequency (F):\n\
 		\tThe format is: A1:S1-F1[,A2:S2-F2[,...]] \n\
 		-j jess_string: same format as unicable_string \n\
+		-L link adapters (identical src,lo/hi,h/v), the format is M:S (master:slave)\n\
+		-Q quattro LNB config (H/H,H/V,L/H,L/V)\n\
+		-X AXE unicable/jess input (0-3)\n\
 		",
 		DVR_BUFFER / 1024);
 	exit (1);
@@ -103,7 +106,7 @@ set_options (int argc, char *argv[])
 	opts.file_line = 0;
 	memset(opts.playlist, sizeof(opts.playlist), 0);
 	
-	while ((opt = getopt (argc, argv, "flr:a:t:d:w:p:shc:b:m:p:e:x:u:j:g")) != -1)
+	while ((opt = getopt (argc, argv, "flr:a:t:d:w:p:shc:b:m:p:e:x:u:j:gL:QX:")) != -1)
 	{
 		//              printf("options %d %c %s\n",opt,opt,optarg);
 		switch (opt)
@@ -214,6 +217,28 @@ set_options (int argc, char *argv[])
 			case JESS_OPT:
 			{
 				set_unicable_adapters(optarg, SWITCH_JESS);
+				break;
+			}
+
+			case LINK_OPT:
+			{
+				set_link_adapters(optarg);
+				break;
+			}
+
+			case QUATTRO_OPT:
+			{
+				opts.quattro = 1;
+				break;
+			}
+
+			case AXE_UNICINP_OPT:
+			{
+				opts.axe_unicinp = atoi(optarg);
+				if (opts.axe_unicinp < 0 || opts.axe_unicinp > 3) {
+					LOG("unicable input %d out of range, using 0", opts.axe_unicinp);
+					opts.axe_unicinp = 0;
+				}
 				break;
 			}
 
