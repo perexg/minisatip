@@ -103,7 +103,7 @@ set_options (int argc, char *argv[])
 	opts.device_id = 0;
 	opts.bootid = 0;
 	opts.force_scan = 0;
-	opts.dvr = 70*7*DVB_FRAME;
+	opts.dvr = 14*7*DVB_FRAME;
 	opts.file_line = 0;
 	memset(opts.playlist, sizeof(opts.playlist), 0);
 	

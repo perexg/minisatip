@@ -478,6 +478,7 @@ int tune (int aid, int sid)
 
 #ifdef AXE
                 axe_set_tuner_led(aid + 1, 1);
+                axe_fe_reset(ad->fe);
                 do { drv = read(ad->dvr, buf, sizeof(buf)); } while (drv > 0);
 #endif
 		rv = tune_it_s2 (ad->fe, &ad->tp);
