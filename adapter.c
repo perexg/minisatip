@@ -169,15 +169,15 @@ init_hw ()
 
 		a[i].enabled = 1;
 		if (!a[i].buf)
-			a[i].buf = malloc1 (ADAPTER_BUFFER + 10);
+			a[i].buf = malloc1 (opts.dvr + 10);
 		if (!a[i].buf)
 		{
 			LOG ("memory allocation failed for %d bytes failed, adapter %d",
-				ADAPTER_BUFFER, i);
+				opts.dvr, i);
 			close_adapter (i);
 			continue;
 		}
-		memset (a[i].buf, 0, ADAPTER_BUFFER + 1);
+		//memset (a[i].buf, 0, ADAPTER_BUFFER + 1);
 
 		num_adapters++;
 		LOG ("opened DVB adapter %d fe:%d dvr:%d", i, a[i].fe, a[i].dvr);
@@ -198,7 +198,7 @@ init_hw ()
 			sockets_add (a[i].dvr, NULL, i, TYPE_DVR, (socket_action) read_dmx,
 			(socket_action) close_adapter_for_socket, (socket_action ) adapter_timeout);
 		//memset (a[i].buf, 0, ADAPTER_BUFFER + 1);
-		set_socket_buffer (a[i].sock, a[i].buf, ADAPTER_BUFFER);
+		set_socket_buffer (a[i].sock, a[i].buf, opts.dvr);
 		sockets_timeout (a[i].sock, 60000);
 		LOG ("done opening adapter %i fe_sys %d", i, a[i].tp.sys);
 

@@ -102,7 +102,7 @@ set_options (int argc, char *argv[])
 	opts.device_id = 0;
 	opts.bootid = 0;
 	opts.force_scan = 0;
-	opts.dvr = DVR_BUFFER;
+	opts.dvr = 70*7*DVB_FRAME;
 	opts.file_line = 0;
 	memset(opts.playlist, sizeof(opts.playlist), 0);
 	
@@ -1035,7 +1035,7 @@ main (int argc, char *argv[])
 	if (opts.slog)
 		openlog ("minisatip", LOG_NDELAY|LOG_NOWAIT|LOG_PID|(opts.slog>1?LOG_PERROR:0), LOG_DAEMON);
 #ifdef AXE
-	LOGL(0, "Starting minisatip version %s, compiled with AXE DVB API",VERSION);
+	LOGL(0, "Starting minisatip version %s, compiled with AXE DVB API, DVR buffer %d bytes",VERSION,opts.dvr);
 #else
 	LOGL(0, "Starting minisatip version %s, compiled with dvbapi version: %04X",VERSION, DVBAPIVERSION);
 #endif
