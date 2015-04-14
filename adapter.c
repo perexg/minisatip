@@ -236,6 +236,7 @@ close_adapter (int na)
 			LOG("AXE standby");
 			for (i = 0; i < 4; i++) {
 				axe_fe_standby(a[i].fe, -1);
+				axe_set_tuner_led(i + 1, 0);
 				ioctl(a[i].fe, FE_SET_VOLTAGE, SEC_VOLTAGE_OFF);
 				a[i].tp.old_diseqc = a[i].tp.old_pol = a[i].tp.old_hiband = -1;
 			}
@@ -243,6 +244,7 @@ close_adapter (int na)
 			LOG("AXE standby: adapter %d busy (%d), keeping", i, a[i].sid_cnt);
 		}
 	}
+	axe_set_tuner_led(na + 1, 0);
 #endif
 	if (a[na].fe > 0)
 		close (a[na].fe);
@@ -461,6 +463,10 @@ int tune (int aid, int sid)
 {
 	adapter *ad = get_adapter(aid);
 	int rv = 0;
+#ifdef AXE
+	ssize_t drv;
+	char buf[1316];
+#endif
 	
 	if(!ad) return -400;
 	ad->last_sort = getTick ();
@@ -472,6 +478,7 @@ int tune (int aid, int sid)
 
 #ifdef AXE
                 axe_set_tuner_led(aid + 1, 1);
+                do { drv = read(ad->dvr, buf, sizeof(buf)); } while (drv > 0);
 #endif
 		rv = tune_it_s2 (ad->fe, &ad->tp);
 		a[aid].status = 0;
@@ -482,6 +489,7 @@ int tune (int aid, int sid)
 			update_pids (aid);
 		}
 #ifdef AXE
+		//do { drv = read(ad->dvr, buf, sizeof(buf)); } while (drv > 0);
 		if (rv < 0)
 			axe_set_tuner_led(aid + 1, 0);
 #endif
