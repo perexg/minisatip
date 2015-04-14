@@ -67,6 +67,7 @@ usage ()
 		-p url: specify playlist url using X_SATIPM3U header \n\
 		-u unicable_string: defines the unicable adapters (A) and their slot (S) and frequency (F):\n\
 		\tThe format is: A1:S1-F1[,A2:S2-F2[,...]] \n\
+		\tWhen * character is used before frequency, force 13V for setup\n\
 		-j jess_string: same format as unicable_string \n\
 		-L link adapters (identical src,lo/hi,h/v), the format is M:S (master:slave)\n\
 		-Q quattro LNB config (H/H,H/V,L/H,L/V)\n\

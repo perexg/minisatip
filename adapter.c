@@ -895,7 +895,7 @@ void enable_adapters(char *o)
 
 void set_unicable_adapters(char *o, int type)
 {
-	int i, la, a_id, slot, freq;
+	int i, la, a_id, slot, freq, o13v;
 	char buf[100], *arg[20], *sep1, *sep2;
 
 	strncpy(buf, o, sizeof(buf));
@@ -909,12 +909,16 @@ void set_unicable_adapters(char *o, int type)
 		sep2 = strchr(arg[i], '-');
 		if( !sep1 || !sep2)
 			continue;
+		if(sep2[1] == '*') {
+			o13v = 1;
+			sep2++;
+		}
 		slot = map_intd(sep1 + 1, NULL, -1);
 		freq = map_intd(sep2 + 1, NULL, -1);
 		if( slot < 0 || freq < 0)
 			continue;
 		a[a_id].uslot = slot;
-		a[a_id].ufreq = freq;
+		a[a_id].ufreq = o13v ? -freq : freq;
 		a[a_id].switch_type = type;
 		LOG("Setting %s adapter %d slot %d freq %d", type==SWITCH_UNICABLE?"unicable":"jess", a_id, slot, freq);
 	}

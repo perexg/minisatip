@@ -282,8 +282,12 @@ int send_unicable(int fd, int freq, int pos, int pol, int hiband, int slot, int 
 	struct dvb_diseqc_master_cmd cmd = {
 		{0xe0, 0x11, 0x5a, 0x00, 0x00}, 5
 	};
-	int t;
+	int t, o13v = 0;
 
+        if (ufreq < 0) {
+        	o13v = 1;
+        	ufreq = -ufreq;
+	}
 	t = (freq + ufreq + 2) / 4 - 350;
 
 	cmd.msg[3] = ((t & 0x0300) >> 8) | 
@@ -300,7 +304,7 @@ int send_unicable(int fd, int freq, int pos, int pol, int hiband, int slot, int 
 	msleep(15);
 	if (ioctl(fd, FE_SET_TONE, SEC_TONE_OFF) == -1)
 		LOG("send_unicable: FE_SET_TONE failed for fd %d: %s", fd, strerror(errno));	
-	if (ioctl(fd, FE_SET_VOLTAGE, SEC_VOLTAGE_18) == -1)
+	if (!o13v && ioctl(fd, FE_SET_VOLTAGE, SEC_VOLTAGE_18) == -1)
 		LOG("send_unicable: FE_SET_VOLTAGE failed for fd %d: %s", fd, strerror(errno));	
 	msleep(15);
 	if (ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &cmd) == -1)
@@ -319,6 +323,7 @@ int send_jess(int fd, int freq, int pos, int pol, int hiband, int slot, int ufre
 	};
 //	int t = (freq / 1000) - 100;
 	int t = freq - 100;
+	int o13v = ufreq < 0;
 
 	cmd.msg[1] = slot << 3;
 	cmd.msg[1] |= ((t << 8) & 0x07);
@@ -336,7 +341,7 @@ int send_jess(int fd, int freq, int pos, int pol, int hiband, int slot, int ufre
 	msleep(15);
 	if (ioctl(fd, FE_SET_TONE, SEC_TONE_OFF) == -1)
 		LOG("send_jess: FE_SET_TONE failed for fd %d: %s", fd, strerror(errno));
-	if (ioctl(fd, FE_SET_VOLTAGE, SEC_VOLTAGE_18) == -1)
+	if (!o13v && ioctl(fd, FE_SET_VOLTAGE, SEC_VOLTAGE_18) == -1)
 		LOG("send_jess: FE_SET_VOLTAGE failed for fd %d: %s", fd, strerror(errno));
 	msleep(15);
 	if (ioctl(fd, FE_DISEQC_SEND_MASTER_CMD, &cmd) == -1)
