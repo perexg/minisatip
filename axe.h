@@ -85,12 +85,15 @@ static inline axe_fp_fd_write(const char *s)
 
 void axe_set_tuner_led(int tuner, int on)
 {
-  static int state = -1;
+  static int state = 0;
   char buf[16];
-  if (state != on) {
+  if (((state >> tuner) & 1) != !!on) {
     sprintf(buf, "T%d_LED %d\n", tuner, on ? 1 : 0);
     axe_fp_fd_write(buf);
-    state = on;
+    if (on)
+      state |= 1 << tuner;
+    else
+      state &= ~(1 << tuner);
   }
 }
 
