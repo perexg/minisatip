@@ -974,3 +974,68 @@ int delsys_match(adapter *ad, int del_sys)
 	return 0;
 		
 }
+
+#ifdef AXE
+
+#define myf(buf, buflen, fmt, ...) do { \
+  size_t l = strlen(buf); \
+  snprintf(buf + l, buflen - l, fmt, ##__VA_ARGS__); \
+} while (0)
+
+extern streams st[];
+
+#include <arpa/inet.h>
+
+static char *axe_status_pol(int pol)
+{
+	switch (pol) {
+	case 0: return "none";
+	case 1: return "v";
+	case 2: return "h";
+	case 3: return "l";
+	case 4: return "r";
+	default: return "unknown";
+	}
+}
+
+void
+axe_status(char *buf, size_t buflen)
+{
+	size_t idx = 0;
+	int i, k, j, port;
+	char *host;
+
+	buf[0] = '\0';
+	myf(buf, buflen, "StatusVersion=1\n");
+	for (i = 0; i < MAX_ADAPTERS; i++) {
+		if (!a[i].enabled) continue;
+		if (a[i].sid_cnt == 0) continue;
+		myf(buf, buflen, "\nSubscriptions_%d=%d\n", i + 1, a[i].sid_cnt);
+		myf(buf, buflen, "DiseqC_%d=%d\n", i + 1, a[i].tp.diseqc);
+		myf(buf, buflen, "Freq_%d=%d\n", i + 1, a[i].tp.freq);
+		myf(buf, buflen, "Pol_%d=%s\n", i + 1, axe_status_pol(a[i].tp.pol));
+		for (k = 0; k < MAX_PIDS; k++) {
+			if (a[i].pids[k].flags == 0) continue;
+			if (k == 0)
+				myf(buf, buflen, "Pids_%d=%d", i + 1, a[i].pids[k].pid);
+			else
+				myf(buf, buflen, ",%d", a[i].pids[k].pid);
+		}
+		if (k > 0)
+			myf(buf, buflen, "\n");
+		for (k = j = 0; k < MAX_STREAMS; k++) {
+			streams *s = &st[k];
+			if (!s->enabled) continue;
+			if (s->adapter != i) continue;
+			port = ntohs(s->sa.sin_port);
+			host = inet_ntoa(s->sa.sin_addr);
+			myf(buf, buflen, "Stream_%d_%d=%s:%d\n", i + 1, ++j, host, port);
+			myf(buf, buflen, "Streaming_%d_%d=%d\n", i + 1, j, s->do_play ? "active" : "inactive");
+			if (s->sp > 0) {
+				myf(buf, buflen, "IOCnt_%d_%d=%zu\n", i + 1, j, s->sp);
+				myf(buf, buflen, "Bytes_%d_%d=%zu\n", i + 1, j, s->sb);
+			}
+		}
+	}
+}
+#endif

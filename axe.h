@@ -110,6 +110,7 @@ void axe_set_network_led(int on)
 
 void axe_set_tuner_led(int tuner, int on);
 void axe_set_network_led(int on);
+void axe_status(char *buf, size_t buflen);
 
 #endif
 

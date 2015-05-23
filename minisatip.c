@@ -824,6 +824,15 @@ read_http (sockets * s)
 		return 0;
 	}
 
+#ifdef AXE
+	if (strncmp (arg[1], "/axe-status.txt", 15) == 0)
+	{
+		axe_status(buf, sizeof(buf));
+		http_response (s, 200, "CACHE-CONTROL: no-cache\r\nContent-type: text/plain", buf, 0, 0);
+		return 0;
+	}
+#endif
+
 	if (strncmp (arg[1], "/icons/", 7) == 0)
 	{
 		char *ctype = NULL;
