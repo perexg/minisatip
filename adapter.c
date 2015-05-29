@@ -1002,9 +1002,10 @@ void
 axe_status(char *buf, size_t buflen)
 {
 	size_t idx = 0;
-	int i, k, j, port;
+	int i, k, j, port, t;
 	char *host;
 
+	t = getTick();
 	buf[0] = '\0';
 	myf(buf, buflen, "StatusVersion=1\n");
 	for (i = 0; i < MAX_ADAPTERS; i++) {
@@ -1035,6 +1036,8 @@ axe_status(char *buf, size_t buflen)
 				myf(buf, buflen, "IOCnt_%d_%d=%zu\n", i + 1, j, s->sp);
 				myf(buf, buflen, "Bytes_%d_%d=%zu\n", i + 1, j, s->sb);
 			}
+			myf(buf, buflen, "LastRTSP_%d_%d=%d\n", i + 1, j, t - s->rtime);
+			myf(buf, buflen, "TimeoutRTSP_%d_%d=%d\n", i + 1, j, s->timeout);
 		}
 	}
 }
