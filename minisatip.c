@@ -176,6 +176,10 @@ set_options (int argc, char *argv[])
 			case DVRBUFFER_OPT:
 			{
 				opts.dvr = atoi (optarg) * 1024;
+#ifdef AXE
+                                opts.dvr += 7*188 - 1;
+                                opts.dvr -= opts.dvr % (7*188);
+#endif
 				break;
 			}
 

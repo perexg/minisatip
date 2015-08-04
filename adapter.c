@@ -491,6 +491,7 @@ int tune (int aid, int sid)
 		}
 #ifdef AXE
 		//do { drv = read(ad->dvr, buf, sizeof(buf)); } while (drv > 0);
+		axe_dmxts_start(ad->dvr);
 		if (rv < 0)
 			axe_set_tuner_led(aid + 1, 0);
 #endif
