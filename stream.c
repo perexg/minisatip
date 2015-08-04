@@ -625,13 +625,18 @@ extern uint32_t nsecs, reads;
 void
 flush_streamb (streams * sid, char *buf, int rlen, int ctime)
 {
-	int i, rv = 0;
+	int i, remain, rv = 0;
 	
 	if (sid->type == STREAM_HTTP)
 		rv = send (sid->rsock, buf, rlen, MSG_NOSIGNAL);
-	else
-		for (i = 0; i < rlen; i += DVB_FRAME * 7)
-			rv += send_rtpb (sid, &buf[i], DVB_FRAME * 7);
+	else {
+		for (i = 0; i < rlen; i += DVB_FRAME * 7) {
+			remain = rlen - i;
+			rv += send_rtpb (sid, &buf[i],
+			                 remain < DVB_FRAME * 7 ?
+			                   remain : DVB_FRAME * 7);
+		}
+	}
 	
 	sid->iiov = 0;
 	sid->wtime = ctime;
@@ -683,8 +688,9 @@ read_dmx (sockets * s)
 	int pid, flush_all = 0;
 	uint64_t stime;
 
-	if (s->rlen % DVB_FRAME != 0)
-		s->rlen = ((int) s->rlen / DVB_FRAME) * DVB_FRAME;
+	i = s->rlen % DVB_FRAME;
+	if (i)
+		s->rlen -= i;
 	if (s->rlen == s->lbuf)
 		cnt++;
 	else
@@ -704,7 +710,7 @@ read_dmx (sockets * s)
 		LOG ("Buffer overrun %d %d", s->rlen, s->lbuf);
 
 //	LOGL(2, "read_dmx called for adapter %d -> %d bytes read ",s->sid, s->rlen);
-		
+
 	int rlen = s->rlen;
 	ad->rtime = s->rtime;
 	s->rlen = 0;
