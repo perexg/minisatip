@@ -72,6 +72,7 @@ usage ()
 		-L link adapters (identical src,lo/hi,h/v), the format is M:S (master:slave)\n\
 		-Q quattro LNB config (H/H,H/V,L/H,L/V)\n\
 		-X AXE unicable/jess input (0-3)\n\
+		-S X: skip initial MPEG-TS packets for AXE demuxer (default 35)\n\
 		",
 		DVR_BUFFER / 1024);
 	exit (1);
@@ -105,9 +106,10 @@ set_options (int argc, char *argv[])
 	opts.force_scan = 0;
 	opts.dvr = 14*7*DVB_FRAME;
 	opts.file_line = 0;
+	opts.axe_skippkt = 35;
 	memset(opts.playlist, sizeof(opts.playlist), 0);
 	
-	while ((opt = getopt (argc, argv, "flr:a:t:d:w:p:shc:b:m:p:e:x:u:j:gL:QX:")) != -1)
+	while ((opt = getopt (argc, argv, "flr:a:t:d:w:p:shc:b:m:p:e:x:u:j:gL:QX:S:")) != -1)
 	{
 		//              printf("options %d %c %s\n",opt,opt,optarg);
 		switch (opt)
@@ -247,6 +249,15 @@ set_options (int argc, char *argv[])
 				break;
 			}
 
+			case AXE_SKIP_PKT:
+			{
+				opts.axe_skippkt = atoi(optarg);
+				if (opts.axe_skippkt < 0)
+                                        opts.axe_skippkt = 0;
+				if (opts.axe_skippkt > 200)
+                                        opts.axe_skippkt = 200;
+                                break;
+			}
 		}
 	}
 	

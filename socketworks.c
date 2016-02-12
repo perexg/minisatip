@@ -299,6 +299,7 @@ socket_action a, socket_action c, socket_action t)
 		max_sock = i + 1;
 	s[i].buf = NULL;
 	s[i].lbuf = 0;
+	s[i].skiplen = type == TYPE_DVR ? opts.axe_skippkt * 188 : 0;
 	s[i].close_sec = 0;
 	s[i].sock_id = i;
 	pf[i].fd = sock;
@@ -442,6 +443,18 @@ select_and_execute ()
 						}
 						if (rlen == 0 || (rlen < 0 || errno == -EAGAIN))
 							rlen = 1;
+						if (ss->skiplen > 0) {
+							LOG("AXE skip: before rlen %d skiplen %d", ss->rlen, ss->skiplen);
+							if (ss->skiplen >= ss->rlen) {
+								ss->skiplen -= ss->rlen;
+								ss->rlen = 0;
+							} else {
+								memmove(ss->buf, &ss->buf[ss->skiplen], ss->rlen - ss->skiplen);
+								ss->rlen = ss->rlen - ss->skiplen;
+								ss->skiplen = 0;
+							}
+							LOG("AXE skip: after rlen %d skiplen %d", ss->rlen, ss->skiplen);
+						}
 					}
 #endif
 								 //force 0 at the end of the string

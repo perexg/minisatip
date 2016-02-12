@@ -34,6 +34,7 @@ void set_options (int argc, char *argv[]);
 #define LINK_OPT 'L'
 #define QUATTRO_OPT 'Q'
 #define AXE_UNICINP_OPT 'X'
+#define AXE_SKIP_PKT 'S'
 
 #define PID_FILE "/var/run/minisatip.pid"
 struct struct_opts
@@ -57,6 +58,7 @@ struct struct_opts
 	int file_line;
 	int quattro;
 	int axe_unicinp;
+	int axe_skippkt;
 	char *last_log;	
 	char playlist[200];
 };

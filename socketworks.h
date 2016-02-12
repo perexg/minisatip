@@ -18,6 +18,7 @@ typedef struct struct_sockets
 	unsigned char *buf;
 	int lbuf;
 	int rlen;
+	int skiplen;
 	int close_sec;
 	int sock_id;				 // socket id
 	int err;
