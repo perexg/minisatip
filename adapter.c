@@ -919,6 +919,7 @@ void set_unicable_adapters(char *o, int type)
 		sep2 = strchr(arg[i], '-');
 		if( !sep1 || !sep2)
 			continue;
+		o13v = 0;
 		if(sep2[1] == '*') {
 			o13v = 1;
 			sep2++;
