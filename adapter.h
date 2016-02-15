@@ -6,7 +6,11 @@
 typedef struct ca_device ca_device_t;
 
 #define MAX_ADAPTERS 16
+#ifdef AXE
+#define DVR_BUFFER 14*7*DVB_FRAME
+#else
 #define DVR_BUFFER 30*1024*188
+#endif
 #ifdef NO_BACKTRACE
 #define MAX_STREAMS_PER_PID 8
 #else
@@ -86,6 +90,7 @@ typedef struct struct_adapter
 	uint16_t strength, snr, max_strength, max_snr;
 	uint32_t pid_err, dec_err; // detect pids received but not part of any stream, decrypt errors
 	diseqc diseqc_param;
+	int slave;
 	int old_diseqc;
 	int old_hiband;
 	int old_pol;
@@ -132,6 +137,7 @@ void set_diseqc_adapters(char *o);
 void set_diseqc_timing(char *o);
 void set_slave_adapters(char *o);
 void set_adapter_dmxsource(char *o);
+void set_link_adapters(char *o);
 void reset_pids_type(int aid, int clear_pat);
 void reset_ecm_type_for_key(int aid, int key);
 int delsys_match(adapter *ad, int del_sys);

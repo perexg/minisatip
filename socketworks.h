@@ -24,6 +24,7 @@ typedef struct struct_sockets {
 	int lbuf;
 	int rlen;
 	int timeout_ms;
+	int skiplen;
 	int id;				 // socket id
 	int err;
 	int flags; // 1 - buf is allocated dynamically

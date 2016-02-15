@@ -10,7 +10,7 @@
 
 #define VERSION_BUILD "54"
 #define CC(a,b,c) #a b #c
-#define VERSION CC(0.5.,VERSION_BUILD,)
+#define VERSION CC(0.5.,VERSION_BUILD,-axe101)
 
 void set_options (int argc, char *argv[]);
 
@@ -53,6 +53,9 @@ struct struct_opts
 	int force_scan;
 	int clean_psi;
 	int file_line;
+	int quattro;
+	int axe_unicinp;
+	int axe_skippkt;
 	char *last_log;	
 	int dvbapi_port;
 	char *dvbapi_host;

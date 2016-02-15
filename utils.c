@@ -37,6 +37,8 @@
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
+#include <sys/resource.h>
 #include <net/if.h>
 #include <fcntl.h>
 #include <ctype.h>
@@ -1093,6 +1095,7 @@ pthread_t start_new_thread(char *name)
 
 void set_thread_prio(pthread_t tid, int prio)
 {
+#if 0
 	int rv;
 	struct sched_param param;
 	memset(&param, 0, sizeof(struct sched_param));
@@ -1100,6 +1103,12 @@ void set_thread_prio(pthread_t tid, int prio)
 	if ((rv = pthread_setschedparam(pthread_self(), SCHED_RR, &param)))
 		LOG("pthread_setschedparam failed with error %d", rv);
 	return;
+#else
+	pid_t xtid;
+	xtid = syscall(SYS_gettid);
+	if (setpriority(PRIO_PROCESS, xtid, prio))
+		LOG("setpriority(%d) failed with error %d", prio, errno);
+#endif
 }
 
 struct struct_array

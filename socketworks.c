@@ -437,6 +437,7 @@ int sockets_add(int sock, struct sockaddr_in *sa, int sid, int type,
 	ss->buf = NULL;
 	ss->lbuf = 0;
 	ss->timeout_ms = 0;
+	ss->skiplen = type == TYPE_DVR ? opts.axe_skippkt * 188 : 0;
 	ss->id = i;
 	ss->read = (read_action) sockets_read;
 	ss->lock = NULL;
@@ -637,6 +638,29 @@ void *select_and_execute(void *arg)
 						ss->rlen += rlen;
 					else
 						ss->rlen = 0;
+#ifdef AXE
+					if (ss->type == TYPE_DVR) {
+						while (rlen > 0 && ss->lbuf - ss->rlen >= 1316) {
+							rlen = read (ss->sock, &ss->buf[ss->rlen], ss->lbuf - ss->rlen);
+							if (rlen > 0)
+								ss->rlen += rlen;
+						}
+						if (rlen == 0 || (rlen < 0 || errno == -EAGAIN))
+							read_ok = 1;
+						if (ss->skiplen > 0 && ss->rlen > 0) {
+							LOG("AXE skip: before rlen %d skiplen %d", ss->rlen, ss->skiplen);
+							if (ss->skiplen >= ss->rlen) {
+								ss->skiplen -= ss->rlen;
+								ss->rlen = 0;
+							} else {
+								memmove(ss->buf, &ss->buf[ss->skiplen], ss->rlen - ss->skiplen);
+								ss->rlen = ss->rlen - ss->skiplen;
+								ss->skiplen = 0;
+							}
+							LOG("AXE skip: after rlen %d skiplen %d", ss->rlen, ss->skiplen);
+						}
+					}
+#endif
 					//force 0 at the end of the string
 					if (ss->lbuf >= ss->rlen)
 						ss->buf[ss->rlen] = 0;

@@ -89,6 +89,12 @@ static const struct option long_options[] =
 		{ "xml", required_argument, NULL, 'X' },
 		{ "help", no_argument, NULL, 'h' },
 		{ "version", no_argument, NULL, 'V' },
+#ifdef AXE
+		{ "link_adapters", required_argument, NULL, 'L' },
+		{ "quattro", required_argument, NULL, 'Q' },
+		{ "axe-uinput", required_argument, NULL, 'U' },
+		{ "skip-mpegts", required_argument, NULL, 'M' },
+#endif
 		{ 0, 0, 0, 0 } };
 
 #define RRTP_OPT 'r'
@@ -122,6 +128,11 @@ static const struct option long_options[] =
 #define XML_OPT 'X'
 #define THREADS_OPT 'T'
 #define DMXSOURCE_OPT '9'
+#define LINK_OPT 'L'
+#define QUATTRO_OPT 'Q'
+#define AXE_UNICINP_OPT 'U'
+#define AXE_SKIP_PKT 'M'
+
 
 char *built_info[] =
 {
@@ -177,8 +188,11 @@ void print_version(int use_log)
 	char buf[200];
 	int i, len = 0;
 	memset(buf, 0, sizeof(buf));
-	len += sprintf(buf, "%s version %s, compiled with s2api version: %04X",
-			app_name, version, LOGDVBAPIVERSION);
+	len += sprintf(buf, "%s version %s, compiled with s2api version: %04X"
+#ifdef AXE
+		     " (AXE)"
+#endif
+	               , app_name, version, LOGDVBAPIVERSION);
 	if (!use_log)
 		puts(buf);
 	else
@@ -191,7 +205,7 @@ void usage()
 {
 	print_version(0);
 	printf(
-			"\n\t./%s [-[fgltz]] [-a x:y:z] [-b X:Y] [-c X] [-d A:C-U ] [-D device_id] [-e X-Y,Z] [-i prio] \n\
+			"\n\t./%s [-[fgltzQ]] [-a x:y:z] [-b X:Y] [-c X] [-d A:C-U ] [-D device_id] [-e X-Y,Z] [-i prio] \n\
 	\t[-[uj] A1:S1-F1[-PIN]] [-m mac]"
 #ifndef DISABLE_DVBAPI
 					"[-o oscam_host:dvbapi_port] "
@@ -202,7 +216,8 @@ void usage()
 			"[-s [DELSYS:]host[:port] "
 #endif
 			"[-u A1:S1-F1[-PIN]] [-w http_server[:port]] \n\
-	\t[-x http_port] [-X xml_path] [-y rtsp_port] \n\n\
+	\t[-x http_port] [-X xml_path] [-y rtsp_port] [-L M1:S1[,M2:S2]] [-U unicable_adapter] \n\
+	\t[-M mpegts_packets]\n\n\
 Help\n\
 -------\n\
 \n\
@@ -329,7 +344,26 @@ Help\n\
 	* eg: -y 5544 \n\
 	- changing this to a port > 1024 removes the requirement for minisatip to run as root\n\
 \n\
-",
+* -L --link-adapters mapping_string: link adapters (identical src,lo/hi,h/v)\n\
+\t* The format is: M1:S1[,[M2:S2]] - master:slave\n\
+	* eg: 0:1,0:2,0:3 \n\
+\n\
+"
+#ifdef AXE
+"\
+* -L --link-adapters mapping_string: link adapters (identical src,lo/hi,h/v)\n\
+\t* The format is: M1:S1[,M2:S2] - master:slave\n\
+	* eg: 0:1,0:2,0:3 \n\
+\n\
+* -Q --quattro  quattro LNB config (H/H,H/V,L/H,L/V)\n\
+\n\
+* -U --axe-uinput adapterno: AXE unicable/jess input (0-3)\n\
+\n\
+* -M --skip-mpegts packets: skip initial MPEG-TS packets for AXE demuxer (default 35)\n\
+\n\
+"
+#endif
+,
 			app_name,
 			ADAPTER_BUFFER,
 			DVR_BUFFER, opts.no_threads ? "DISABLED" : "ENABLED");
@@ -384,10 +418,11 @@ void set_options(int argc, char *argv[])
 #ifdef NO_BACKTRACE
 	opts.no_threads = 1;
 #endif
+	opts.axe_skippkt = 35;
 	memset(opts.playlist, 0, sizeof(opts.playlist));
 
 	while ((opt = getopt_long(argc, argv,
-			"flr:a:td:w:p:s:n:hc:b:m:p:e:x:u:j:o:gy:i:q:D:VR:S:TX:Y:O",
+			"flr:a:td:w:p:s:n:hc:b:m:p:e:x:u:j:o:gy:i:q:D:VR:S:TX:Y:OL:QU:M:",
 			long_options, NULL)) != -1)
 	{
 		//              printf("options %d %c %s\n",opt,opt,optarg);
@@ -459,9 +494,12 @@ void set_options(int argc, char *argv[])
 			opts.adapter_buffer = (opts.adapter_buffer / 188) * 188;
 			if (opts.adapter_buffer < ADAPTER_BUFFER)
 				opts.adapter_buffer = ADAPTER_BUFFER;
+#ifdef AXE
+			opts.dvr_buffer += 7*188 - 1;
+			opts.dvr_buffer -= opts.dvr_buffer % (7*188);
+#endif
 			if (opts.dvr_buffer == 0)
 				opts.dvr_buffer = DVR_BUFFER;
-
 			break;
 		}
 
@@ -629,6 +667,33 @@ void set_options(int argc, char *argv[])
 				LOGL(0, "Not a valid path for the xml file")
 			;
 			break;
+#ifdef AXE
+		case LINK_OPT:
+			set_link_adapters(optarg);
+                        break;
+
+		case QUATTRO_OPT:
+			opts.quattro = 1;
+                        break;
+
+		case AXE_UNICINP_OPT:
+			opts.axe_unicinp = atoi(optarg);
+                        if (opts.axe_unicinp < 0 || opts.axe_unicinp > 3) {
+                        	LOG("unicable input %d out of range, using 0", opts.axe_unicinp);
+                                opts.axe_unicinp = 0;
+                        }
+                        break;
+
+		case AXE_SKIP_PKT:
+		{
+			opts.axe_skippkt = atoi(optarg);
+			if (opts.axe_skippkt < 0)
+				opts.axe_skippkt = 0;
+			if (opts.axe_skippkt > 200)
+				opts.axe_skippkt = 200;
+			break;
+		}
+#endif
 		}
 
 	}
@@ -1154,6 +1219,9 @@ int ssdp_reply(sockets * s)
 		return 0;
 	}
 
+#ifdef AXE
+	axe_set_network_led(1);
+#endif
 // not my uuid
 	LOGL(4, "Received SSDP packet from %s:%d -> handle %d",
 			get_socket_rhost(s->id, ra, sizeof(ra)), get_socket_rport(s->id),
@@ -1289,7 +1357,11 @@ int main(int argc, char *argv[])
 
 	if (!opts.no_threads)
 		set_socket_thread(sock_signal, start_new_thread("signal"));
+#ifdef AXE
+	sockets_timeout(sock_signal, 400);
+#else
 	sockets_timeout(sock_signal, 1000);
+#endif
 
 	if (0 > (sock_bw = sockets_add(SOCK_TIMEOUT, NULL, -1, TYPE_UDP, NULL,
 	NULL, (socket_action) calculate_bw)))

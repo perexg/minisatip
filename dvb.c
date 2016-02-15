@@ -42,6 +42,11 @@
 #include "ca.h"
 #include "utils.h"
 
+#ifdef AXE
+#define AXE_MAIN 1
+#include "axe.h"
+#endif
+
 char *fe_pilot[] =
 { "on", "off", " ", //auto
 		NULL };
@@ -329,13 +334,25 @@ int dvb_open_device(adapter *ad)
 	char buf[100];
 	LOG("trying to open [%d] adapter %d and frontend %d", ad->id, ad->pa,
 			ad->fn);
+#ifdef AXE
+	sprintf(buf, "/dev/axe/frontend-%d", ad->pa);
+#else
 	sprintf(buf, "/dev/dvb/adapter%d/frontend%d", ad->pa, ad->fn);
+#endif
 	ad->fe = open(buf, O_RDWR | O_NONBLOCK);
+#ifdef AXE
+	sprintf(buf, "/dev/axe/demuxts-%d", ad->pa);
+#else
 	sprintf(buf, "/dev/dvb/adapter%d/dvr%d", ad->pa, ad->fn);
+#endif
 	ad->dvr = open(buf, O_RDONLY | O_NONBLOCK);
 	if (ad->fe < 0 || ad->dvr < 0)
 	{
+#ifdef AXE
+		sprintf(buf, "/dev/axe/frontend-%d", ad->pa);
+#else
 		sprintf(buf, "/dev/dvb/adapter%d/frontend%d", ad->pa, ad->fn);
+#endif
 		LOGL(0, "Could not open %s in RW mode (fe: %d, dvr: %d)", buf, ad->fe,
 				ad->dvr);
 		if (ad->fe >= 0)
@@ -348,6 +365,7 @@ int dvb_open_device(adapter *ad)
 	ad->type = ADAPTER_DVB;
 	ad->dmx = -1;
 	LOG("opened DVB adapter %d fe:%d dvr:%d", ad->id, ad->fe, ad->dvr);
+#ifndef AXE
 	if (ioctl(ad->dvr, DMX_SET_BUFFER_SIZE, opts.dvr_buffer) < 0)
 		LOG("couldn't set DVR buffer size error %d: %s", errno, strerror(errno))
 	else
@@ -369,7 +387,7 @@ int dvb_open_device(adapter *ad)
 					ad->dmx_source);
 
 	}
-
+#endif
 	return 0;
 }
 
@@ -584,15 +602,98 @@ int setup_switch(int frontend_fd, adapter *ad, transponder *tp)
 		hiband = 1;
 	}
 
+#ifdef AXE
+	adapter *ad2, *adm;
+	int input = 0, aid;
+
+	if (tp->diseqc_param.switch_type != SWITCH_UNICABLE &&
+	    tp->diseqc_param.switch_type != SWITCH_JESS) {
+		input = aid;
+		if (ad && !opts.quattro) {
+			adm = get_adapter(ad->slave ? ad->slave - 1 : ad->pa);
+			if (adm == NULL) {
+				LOG("axe_fe: unknown master adapter %d", input);
+				return 0;
+			}
+			if (adm->old_pol >= 0) {
+				for (aid = 0; aid < 4; aid++) {
+					ad2 = get_adapter(aid);
+					if (!ad2 || ad == ad2) continue;
+					if (ad2->slave && ad2->slave - 1 != adm->pa) continue;
+					if (!ad2->slave && ad2 != adm) continue;
+					if (ad2->sid_cnt > 0) break;
+				}
+				if (adm != ad && aid < 4 &&
+				    (adm->old_pol != pol ||
+				     adm->old_hiband != hiband ||
+				     adm->old_diseqc != diseqc))
+					return 0;
+			}
+			if (ad->slave) {
+				input = ad->slave - 1;
+				adm = get_adapter(input);
+				if (adm == NULL) {
+					LOG("axe_fe: unknown master adapter %d", input);
+					return 0;
+				}
+				if(adm->old_pol != pol ||
+				   adm->old_hiband != hiband ||
+				   adm->old_diseqc != diseqc) {
+					send_diseqc(adm->fe, diseqc, ad->old_diseqc != diseqc,
+						    pol, hiband, &tp->diseqc_param);
+					adm->old_pol = pol;
+					adm->old_hiband = hiband;
+				        adm->old_diseqc = diseqc;
+				}
+				goto axe;
+			}
+		}
+		if (ad && opts.quattro) {
+			input = ((hiband ^ 1) << 1) | (pol ^ 1);
+			adm = get_adapter(input);
+			if (adm == NULL) {
+				LOG("axe_fe: unknown master adapter %d", input);
+				return 0;
+			}
+			if(adm->old_pol != pol || adm->old_hiband != hiband) {
+				send_diseqc(adm->fe, 0, 0, pol, hiband,
+				            &tp->diseqc_param);
+				adm->old_pol = pol;
+				adm->old_hiband = hiband;
+				adm->old_diseqc = diseqc = 0;
+			}
+		}
+	} else {
+		input = opts.axe_unicinp;
+		ad = get_adapter(input);
+		if (ad == NULL) {
+			LOGL(3, "axe setup: unable to find adapter %d", input);
+			return 0;
+		}
+	}
+#endif
+
 	if (tp->diseqc_param.switch_type == SWITCH_UNICABLE)
 	{
-		freq = send_unicable(frontend_fd, freq / 1000, diseqc, pol, hiband,
-				&tp->diseqc_param);
+#ifdef AXE
+		if (ad)
+			freq = send_unicable(ad->fe, freq / 1000, diseqc,
+					     pol, hiband, &tp->diseqc_param);
+#else
+		freq = send_unicable(frontend_fd, freq / 1000, diseqc,
+				     pol, hiband, &tp->diseqc_param);
+#endif
 	}
 	else if (tp->diseqc_param.switch_type == SWITCH_JESS)
 	{
-		freq = send_jess(frontend_fd, freq / 1000, diseqc, pol, hiband,
-				&tp->diseqc_param);
+#ifdef AXE
+		if (ad)
+			freq = send_jess(ad->fe, freq / 1000, diseqc,
+					 pol, hiband, &tp->diseqc_param);
+#else
+		freq = send_jess(frontend_fd, freq / 1000, diseqc,
+				 pol, hiband, &tp->diseqc_param);
+#endif
 	}
 	else if (tp->diseqc_param.switch_type == SWITCH_SLAVE)
 	{
@@ -610,6 +711,17 @@ int setup_switch(int frontend_fd, adapter *ad, transponder *tp)
 					"pol %d, hiband %d, switch position %d", pol, hiband,
 					diseqc);
 	}
+
+#ifdef AXE
+axe:
+	LOGL(3, "axe_fe: reset for fd %d adapter %d input %d", frontend_fd, ad ? ad->pa : -1, input);
+	if (axe_fe_reset(frontend_fd) < 0)
+		LOG("axe_fe: RESET failed for fd %d: %s", frontend_fd, strerror(errno));
+	if (axe_fe_input(frontend_fd, input))
+		LOG("axe_fe: INPUT failed for fd %d input %d: %s", frontend_fd, input, strerror(errno));
+	if (opts.quattro)
+		return freq;
+#endif
 
 	ad->old_pol = pol;
 	ad->old_hiband = hiband;
@@ -647,6 +759,14 @@ int dvb_tune(int aid, transponder * tp)
 	memset(p_cmd, 0, sizeof(p_cmd));
 	bclear = getTick();
 
+#ifdef AXE
+	ssize_t drv;
+	char buf[1316];
+	axe_set_tuner_led(aid + 1, 1);
+	axe_fe_reset(ad->fe);
+	do { drv = read(ad->dvr, buf, sizeof(buf)); } while (drv > 0);
+#endif
+
 	if ((ioctl(fd_frontend, FE_SET_PROPERTY, &cmdseq_clear)) == -1)
 	{
 		LOG("FE_SET_PROPERTY DTV_CLEAR failed for fd %d: %s", fd_frontend,
@@ -666,8 +786,10 @@ int dvb_tune(int aid, transponder * tp)
 
 		ADD_PROP(DTV_SYMBOL_RATE, tp->sr)
 		ADD_PROP(DTV_INNER_FEC, tp->fec)
+#ifndef AXE
 		ADD_PROP(DTV_PILOT, tp->plts)
 		ADD_PROP(DTV_ROLLOFF, tp->ro)
+#endif
 #if DVBAPIVERSION >= 0x0502
 		ADD_PROP(DTV_STREAM_ID, tp->plp)
 #endif
@@ -676,7 +798,12 @@ int dvb_tune(int aid, transponder * tp)
 				"tuning to %d(%d) pol: %s (%d) sr:%d fec:%s delsys:%s mod:%s rolloff:%s pilot:%s, ts clear=%jd, ts pol=%jd",
 				tp->freq, freq, get_pol(tp->pol), tp->pol, tp->sr,
 				fe_fec[tp->fec], fe_delsys[tp->sys], fe_modulation[tp->mtype],
-				fe_rolloff[tp->ro], fe_pilot[tp->plts], bclear, bpol)
+#ifdef AXE
+				"auto", "auto",
+#else
+				fe_rolloff[tp->ro], fe_pilot[tp->plts],
+#endif
+				bclear, bpol)
 		break;
 
 	case SYS_DVBT:
@@ -777,29 +904,46 @@ int dvb_tune(int aid, transponder * tp)
 		if (ioctl(fd_frontend, FE_SET_PROPERTY, &p) == -1)
 		{
 			LOG("dvb_tune: set property failed %d %s", errno, strerror(errno));
+#ifdef AXE
+			axe_set_tuner_led(aid + 1, 0);
+#endif
 			return -404;
 		}
+
+#ifdef AXE
+	axe_dmxts_start(ad->dvr);
+#endif
 
 	return 0;
 }
 
 int dvb_set_pid(adapter *a, uint16_t i_pid)
 {
+#ifdef AXE
+	if (i_pid > 8192 || a == NULL)
+		LOG_AND_RETURN(-1, "pid %d > 8192 for ADAPTER %d", i_pid, a->id);
+	if (axe_dmxts_add_pid(a->dvr, i_pid) < 0)
+	{
+		LOG("failed setting filter on PID %d for ADAPTER %d (%s)", i_pid, a->id, strerror (errno));
+		return -1;
+	}
+	LOG("setting filter on PID %d for ADAPTER %d", i_pid, a->id);
+	return ((a->id + 1) << 16) | i_pid;
+#else
 	char buf[100];
 	int fd;
 	int hw, ad;
 
+	sprintf(buf, "/dev/dvb/adapter%d/demux%d", hw, ad);
+
 	hw = a->pa;
 	ad = a->fn;
 	if (i_pid > 8192)
-		LOG_AND_RETURN(-1, "pid %d > 8192 for /dev/dvb/adapter%d/demux%d",
-				i_pid, hw, ad);
+		LOG_AND_RETURN(-1, "pid %d > 8192 for %s", i_pid, buf);
 
-	sprintf(buf, "/dev/dvb/adapter%d/demux%d", hw, ad);
 	if ((fd = open(buf, O_RDWR | O_NONBLOCK)) < 0)
 	{
-		LOG("Could not open demux device /dev/dvb/adapter%d/demux%d: %s ", hw,
-				ad, strerror (errno));
+		LOG("Could not open demux device %s: %s ", buf, strerror (errno));
 		return -1;
 	}
 
@@ -825,10 +969,22 @@ int dvb_set_pid(adapter *a, uint16_t i_pid)
 	LOG("setting filter on PID %d for fd %d", i_pid, fd);
 
 	return fd;
+#endif
 }
 
 int dvb_del_filters(int fd, int pid)
 {
+#ifdef AXE
+	adapter *a = get_adapter((fd >> 16) - 1);
+	if (a == NULL)
+		return 0; /* closed */
+	if ((fd & 0xffff) != pid)
+		LOG_AND_RETURN(0, "AXE PID remove on an invalid handle %d, pid %d", fd, pid);
+	if (axe_dmxts_remove_pid(a->dvr, pid) < 0)
+		LOG("AXE PID remove failed on PID %d ADAPTER %d: %s", pid, a->pa, strerror (errno))
+	else
+		LOG("clearing filters on PID %d ADAPTER %d", pid, a->pa);
+#else
 	if (fd < 0)
 		LOG_AND_RETURN(0, "DMX_STOP on an invalid handle %d, pid %d", fd, pid);
 	if (ioctl(fd, DMX_STOP, NULL) < 0)
@@ -837,10 +993,20 @@ int dvb_del_filters(int fd, int pid)
 		LOG("clearing filter on PID %d FD %d", pid, fd);
 	close(fd);
 	return 0;
+#endif
 }
 
 fe_delivery_system_t dvb_delsys(int aid, int fd, fe_delivery_system_t *sys)
 {
+#ifdef AXE
+	int i;
+	LOG ("Delivery System DVB-S/DVB-S2 (AXE)");
+	for(i = 0 ; i < 10 ; i ++)
+		sys[i] = 0;
+	sys[0] = SYS_DVBS;
+	sys[1] = SYS_DVBS2;
+	return SYS_DVBS2;
+#else
 	int i, res, rv = 0;
 	struct dvb_frontend_info fe_info;
 
@@ -929,6 +1095,7 @@ fe_delivery_system_t dvb_delsys(int aid, int fd, fe_delivery_system_t *sys)
 				fe_delsys[sys[i]], sys[i]);
 
 	return (fe_delivery_system_t) rv;
+#endif
 
 }
 
@@ -1041,6 +1208,7 @@ void dvb_get_signal(adapter *ad)
 		ad->max_strength = (strength > 0) ? strength : 1;
 	if (ad->max_snr <= snr)
 		ad->max_snr = (snr > 0) ? snr : 1;
+#ifndef AXE
 	if (snr > 4096)
 		new_gs = 0;
 	if (new_gs)
@@ -1053,6 +1221,14 @@ void dvb_get_signal(adapter *ad)
 		strength = strength >> 8;
 		snr = snr >> 8;
 	}
+#else
+	strength = strength * 240 / 24000;
+	if (strength > 240)
+		strength = 240;
+	snr = snr * 15 / 54000;
+	if (snr > 15)
+		snr = 15;
+#endif
 	// keep the assignment at the end for the signal thread to get the right values as no locking is done on the adapter
 	ad->snr = snr;
 	ad->strength = strength;
@@ -1065,12 +1241,36 @@ void dvb_commit(adapter *a)
 	return;
 }
 
-void dvb_close(adapter *a)
+int dvb_close(adapter *a2)
 {
+#ifdef AXE
+	adapter *c;
+	int aid, fe = a2->fe;
+	if (fe <= 0)
+		return;
+	axe_fe_reset(fe);
+	for (aid = 0; aid < 4; aid++)
+		if (aid != a2->id && a[aid]->sid_cnt > 0) break;
+	if (aid >= 4) {
+		LOG("AXE standby");
+		for (aid = 0; aid < 4; aid++) {
+			c = a[aid];
+			axe_fe_standby(c->fe, -1);
+			axe_set_tuner_led(aid + 1, 0);
+			ioctl(c->fe, FE_SET_VOLTAGE, SEC_VOLTAGE_OFF);
+			c->old_diseqc = c->old_pol = c->old_hiband = -1;
+		}
+	} else {
+		LOG("AXE standby: adapter %d busy (%d), keeping", aid, a[aid]->sid_cnt);
+	}
+	axe_set_tuner_led(a2->id + 1, 0);
+	return 0;
+#else
 	if (a->dmx >= 0)
 		close(a->dmx);
 	a->dmx = -1;
-	return;
+#endif
+	return 0;
 }
 
 void find_dvb_adapter(adapter **a)
@@ -1081,9 +1281,21 @@ void find_dvb_adapter(adapter **a)
 	int i = 0, j = 0;
 	adapter *ad;
 
+#ifdef AXE
+	axe_set_network_led(0);
+#endif
 	for (i = 0; i < MAX_ADAPTERS; i++)
 		for (j = 0; j < MAX_ADAPTERS; j++)
 		{
+#ifdef AXE
+			if (i < 4 && j == 0) {
+				axe_set_tuner_led(i + 1, 0);
+				sprintf(buf, "/dev/axe/frontend-%d", i);
+				fd = open(buf, O_RDONLY | O_NONBLOCK);
+			} else {
+				continue;
+			}
+#else
 			sprintf(buf, "/dev/dvb/adapter%d/frontend%d", i, j);
 			fd = open(buf, O_RDONLY | O_NONBLOCK);
 			if (fd < 0)
@@ -1091,7 +1303,8 @@ void find_dvb_adapter(adapter **a)
 				sprintf(buf, "/dev/dvb/adapter%d/ca%d", i, j);
 				fd = open(buf, O_RDONLY | O_NONBLOCK);
 			}
-			//LOG("testing device %s -> fd: %d",buf,fd);
+#endif
+			LOG("testing device %s -> fd: %d",buf,fd);
 			if (fd >= 0)
 			{
 //				if (is_adapter_disabled(na))
@@ -1122,6 +1335,14 @@ void find_dvb_adapter(adapter **a)
 				if (na == MAX_ADAPTERS)
 					return;
 			}
+#ifdef AXE
+			else {
+				if (i < 4) {
+					LOGL(0, "AXE - cannot open %s: %i", buf, errno);
+					sleep(60);
+				}
+			}
+#endif
 		}
 	for (; na < MAX_ADAPTERS; na++)
 		if (a[na])
