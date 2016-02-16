@@ -404,7 +404,7 @@ void set_options(int argc, char *argv[])
 	opts.satip_rtsp_over_tcp = 0;
 	opts.output_buffer = 512 * 1024;
 	opts.satip_servers[0] = 0;
-	opts.document_root = "html";
+	opts.document_root = "/usr/share/minisatip/html";
 	opts.xml_path = DESC_XML;
 	opts.no_threads = 0;
 	opts.th_priority = -1;
