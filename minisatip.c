@@ -72,7 +72,7 @@ usage ()
 		-L link adapters (identical src,lo/hi,h/v), the format is M:S (master:slave)\n\
 		-Q quattro LNB config (H/H,H/V,L/H,L/V)\n\
 		-X AXE unicable/jess input (0-3)\n\
-		-S X: skip initial MPEG-TS packets for AXE demuxer (default 35)\n\
+		-M X: skip initial MPEG-TS packets for AXE demuxer (default 35)\n\
 		",
 		DVR_BUFFER / 1024);
 	exit (1);

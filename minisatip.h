@@ -34,7 +34,7 @@ void set_options (int argc, char *argv[]);
 #define LINK_OPT 'L'
 #define QUATTRO_OPT 'Q'
 #define AXE_UNICINP_OPT 'X'
-#define AXE_SKIP_PKT 'S'
+#define AXE_SKIP_PKT 'M'
 
 #define PID_FILE "/var/run/minisatip.pid"
 struct struct_opts
