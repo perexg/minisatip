@@ -340,6 +340,17 @@ sockets_del (int sock)
 	return 0;
 }
 
+void
+sockets_reset (int sock)
+{
+	int i;
+
+	if (sock < 0 || sock > MAX_SOCKS)
+		return;
+	if (s[sock].type == TYPE_DVR)
+		s[sock].skiplen = opts.axe_skippkt * 188;
+	s[sock].rlen = 0;
+}
 
 int run_loop, it = 0, c_time;
 int bw, bwtt, bwnotify;

@@ -481,6 +481,7 @@ int tune (int aid, int sid)
                 axe_fe_reset(ad->fe);
                 do { drv = read(ad->dvr, buf, sizeof(buf)); } while (drv > 0);
 #endif
+		sockets_reset(ad->sock);
 		rv = tune_it_s2 (ad->fe, &ad->tp);
 		a[aid].status = 0;
 		a[aid].status_cnt = 0;
