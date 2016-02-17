@@ -672,6 +672,7 @@ int tune(int aid, int sid)
 		ad->status = -1;
 		ad->status_cnt = 0;
 		set_socket_pos(ad->sock, 0);	// flush the existing buffer
+		set_socket_skip(ad->sock);
 		ad->rlen = 0;
 		if (ad->sid_cnt > 1)	 // the master changed the frequency
 		{

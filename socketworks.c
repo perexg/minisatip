@@ -977,6 +977,14 @@ void set_socket_pos(int sock, int pos)
 	ss->rlen = pos;
 }
 
+void set_socket_skip(int sock)
+{
+	sockets *ss = get_sockets(sock);
+	if (!ss)
+		return;
+	ss->skiplen = opts.axe_skippkt * 188;
+}
+
 char *get_socket_rhost(int s_id, char *dest, int ld)
 {
 	sockets *ss = get_sockets(s_id);
