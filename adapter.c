@@ -962,6 +962,26 @@ void set_link_adapters(char *o)
 	}
 }
 
+void set_unicable_input(char *o)
+{
+	int i, la, input, input2;
+	char buf[100], *arg[20], *sep1;
+
+	strncpy(buf, o, sizeof(buf)-1);
+	buf[sizeof(buf)-1] = '\0';
+	la = split(arg, buf, sizeof(arg), ',');
+	for (i=input=0; i < 4; i++)
+	{
+		if (i < la) {
+			input2=map_intd(arg[i], NULL, -1);
+			if (input2 >= 0 && input2 < 4)
+				input = input2;
+		}
+		opts.axe_unicinp[i] = input;
+		LOG("Setting input %d for unicable adapter %d", input, i);
+	}
+}
+
 int delsys_match(adapter *ad, int del_sys)
 {
 	int i;

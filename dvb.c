@@ -440,7 +440,7 @@ int setup_switch (int frontend_fd, transponder *tp)
 			}
 		}
 	} else {
-		input = opts.axe_unicinp;
+		input = opts.axe_unicinp[input & 3];
 		ad = get_adapter(input);
 		if (ad == NULL) {
 			LOGL(3, "axe setup: unable to find adapter %d", input);

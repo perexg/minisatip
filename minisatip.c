@@ -71,7 +71,7 @@ usage ()
 		-j jess_string: same format as unicable_string \n\
 		-L link adapters (identical src,lo/hi,h/v), the format is M:S (master:slave)\n\
 		-Q quattro LNB config (H/H,H/V,L/H,L/V)\n\
-		-X AXE unicable/jess input (0-3)\n\
+		-X X[,Y]: AXE unicable/jess input (0-3) for all tuners\n\
 		-M X: skip initial MPEG-TS packets for AXE demuxer (default 35)\n\
 		",
 		DVR_BUFFER / 1024);
@@ -241,11 +241,7 @@ set_options (int argc, char *argv[])
 
 			case AXE_UNICINP_OPT:
 			{
-				opts.axe_unicinp = atoi(optarg);
-				if (opts.axe_unicinp < 0 || opts.axe_unicinp > 3) {
-					LOG("unicable input %d out of range, using 0", opts.axe_unicinp);
-					opts.axe_unicinp = 0;
-				}
+				set_unicable_input(optarg);
 				break;
 			}
 

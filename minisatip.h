@@ -57,7 +57,7 @@ struct struct_opts
 	int force_scan;
 	int file_line;
 	int quattro;
-	int axe_unicinp;
+	int axe_unicinp[4];
 	int axe_skippkt;
 	char *last_log;	
 	char playlist[200];

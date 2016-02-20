@@ -67,7 +67,7 @@ void sort_pids (int aid);
 void enable_adapters(char *o);
 void set_unicable_adapters(char *o, int type);
 void set_link_adapters(char *o);
-
+void set_unicable_input(char *o);
 int delsys_match(adapter *ad, int del_sys);
 
 #define get_adapter(a) get_adapter1(a, __FILE__, __LINE__)
