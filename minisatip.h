@@ -54,6 +54,7 @@ struct struct_opts
 	int clean_psi;
 	int file_line;
 	int quattro;
+	int quattro_hiband;
 	int axe_unicinp[4];
 	int axe_skippkt;
 	char *last_log;	

@@ -91,7 +91,8 @@ static const struct option long_options[] =
 		{ "version", no_argument, NULL, 'V' },
 #ifdef AXE
 		{ "link_adapters", required_argument, NULL, 'L' },
-		{ "quattro", required_argument, NULL, 'Q' },
+		{ "quattro", no_argument, NULL, 'Q' },
+		{ "quattro-hiband", required_argument, NULL, 'Z' },
 		{ "axe-uinput", required_argument, NULL, 'U' },
 		{ "skip-mpegts", required_argument, NULL, 'M' },
 #endif
@@ -130,6 +131,7 @@ static const struct option long_options[] =
 #define DMXSOURCE_OPT '9'
 #define LINK_OPT 'L'
 #define QUATTRO_OPT 'Q'
+#define QUATTRO_HIBAND_OPT 'Z'
 #define AXE_UNICINP_OPT 'U'
 #define AXE_SKIP_PKT 'M'
 
@@ -352,6 +354,10 @@ Help\n\
 	* eg: 0:1,0:2,0:3 \n\
 \n\
 * -Q --quattro  quattro LNB config (H/H,H/V,L/H,L/V)\n\
+\n\
+* -Z --quattro-hiband hiband\n\
+	* if hiband is 0, do not allow hiband\n\
+	* if hiband is 1, allow hiband\n\
 \n\
 * -U --axe-uinput adapterno[,adapterno2]: AXE unicable/jess input (0-3)\n\
 	* eg: 0,0,2,2 (two unicable connections at inputs 0 and 2)\n\
@@ -672,6 +678,10 @@ void set_options(int argc, char *argv[])
 
 		case QUATTRO_OPT:
 			opts.quattro = 1;
+                        break;
+
+		case QUATTRO_HIBAND_OPT:
+			opts.quattro_hiband = atoi(optarg) + 1;
                         break;
 
 		case AXE_UNICINP_OPT:
