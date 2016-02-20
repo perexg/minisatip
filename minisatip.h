@@ -33,6 +33,7 @@ void set_options (int argc, char *argv[]);
 #define SYSLOG_OPT 'g'
 #define LINK_OPT 'L'
 #define QUATTRO_OPT 'Q'
+#define QUATTRO_HIBAND_OPT 'Z'
 #define AXE_UNICINP_OPT 'X'
 #define AXE_SKIP_PKT 'M'
 
@@ -57,6 +58,7 @@ struct struct_opts
 	int force_scan;
 	int file_line;
 	int quattro;
+	int quattro_hiband;
 	int axe_unicinp[4];
 	int axe_skippkt;
 	char *last_log;	

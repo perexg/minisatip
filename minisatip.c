@@ -71,6 +71,7 @@ usage ()
 		-j jess_string: same format as unicable_string \n\
 		-L link adapters (identical src,lo/hi,h/v), the format is M:S (master:slave)\n\
 		-Q quattro LNB config (H/H,H/V,L/H,L/V)\n\
+		-Z X: enable loband (0) or hiband (1) only for quattro LNB\n\
 		-X X[,Y]: AXE unicable/jess input (0-3) for all tuners\n\
 		-M X: skip initial MPEG-TS packets for AXE demuxer (default 35)\n\
 		",
@@ -109,7 +110,7 @@ set_options (int argc, char *argv[])
 	opts.axe_skippkt = 35;
 	memset(opts.playlist, sizeof(opts.playlist), 0);
 	
-	while ((opt = getopt (argc, argv, "flr:a:t:d:w:p:shc:b:m:p:e:x:u:j:gL:QX:S:")) != -1)
+	while ((opt = getopt (argc, argv, "flr:a:t:d:w:p:shc:b:m:p:e:x:u:j:gL:QZ:X:S:")) != -1)
 	{
 		//              printf("options %d %c %s\n",opt,opt,optarg);
 		switch (opt)
@@ -238,6 +239,12 @@ set_options (int argc, char *argv[])
 				opts.quattro = 1;
 				break;
 			}
+
+                        case QUATTRO_HIBAND_OPT:
+                        {
+                                opts.quattro_hiband = atoi(optarg) + 1;
+                                break;
+                        }
 
 			case AXE_UNICINP_OPT:
 			{

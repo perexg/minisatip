@@ -426,6 +426,14 @@ int setup_switch (int frontend_fd, transponder *tp)
 			}
 		}
 		if (ad && opts.quattro) {
+			if (opts.quattro_hiband == 1 && hiband) {
+				LOG("axe_fe: hiband is not allowed for quattro config (adapter %d)", input);
+				return 0;
+			}
+			if (opts.quattro_hiband == 2 && !hiband) {
+				LOG("axe_fe: lowband is not allowed for quattro config (adapter %d)", input);
+				return 0;
+			}
 			input = ((hiband ^ 1) << 1) | (pol ^ 1);
 			adm = get_adapter(input);
 			if (adm == NULL) {
