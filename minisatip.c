@@ -344,10 +344,6 @@ Help\n\
 	* eg: -y 5544 \n\
 	- changing this to a port > 1024 removes the requirement for minisatip to run as root\n\
 \n\
-* -L --link-adapters mapping_string: link adapters (identical src,lo/hi,h/v)\n\
-\t* The format is: M1:S1[,[M2:S2]] - master:slave\n\
-	* eg: 0:1,0:2,0:3 \n\
-\n\
 "
 #ifdef AXE
 "\
@@ -357,7 +353,9 @@ Help\n\
 \n\
 * -Q --quattro  quattro LNB config (H/H,H/V,L/H,L/V)\n\
 \n\
-* -U --axe-uinput adapterno: AXE unicable/jess input (0-3)\n\
+* -U --axe-uinput adapterno[,adapterno2]: AXE unicable/jess input (0-3)\n\
+	* eg: 0,0,2,2 (two unicable connections at inputs 0 and 2)\n\
+	*     (tuners 0,1: unicable input 0, tuners 2,3: unicable input 2)\n\
 \n\
 * -M --skip-mpegts packets: skip initial MPEG-TS packets for AXE demuxer (default 35)\n\
 \n\
@@ -677,12 +675,8 @@ void set_options(int argc, char *argv[])
                         break;
 
 		case AXE_UNICINP_OPT:
-			opts.axe_unicinp = atoi(optarg);
-                        if (opts.axe_unicinp < 0 || opts.axe_unicinp > 3) {
-                        	LOG("unicable input %d out of range, using 0", opts.axe_unicinp);
-                                opts.axe_unicinp = 0;
-                        }
-                        break;
+			set_unicable_input(optarg);
+			break;
 
 		case AXE_SKIP_PKT:
 		{
