@@ -336,16 +336,18 @@ int dvb_open_device(adapter *ad)
 			ad->fn);
 #ifdef AXE
 	sprintf(buf, "/dev/axe/frontend-%d", ad->pa);
+	if (ad->fe2 >= 0)
+		ad->fe = ad->fe2;
+	else
+		ad->fe = ad->fe2 = open(buf, O_RDWR | O_NONBLOCK);
+	sprintf(buf, "/dev/axe/demuxts-%d", ad->pa);
+	ad->dvr = open(buf, O_RDONLY | O_NONBLOCK);
 #else
 	sprintf(buf, "/dev/dvb/adapter%d/frontend%d", ad->pa, ad->fn);
-#endif
 	ad->fe = open(buf, O_RDWR | O_NONBLOCK);
-#ifdef AXE
-	sprintf(buf, "/dev/axe/demuxts-%d", ad->pa);
-#else
 	sprintf(buf, "/dev/dvb/adapter%d/dvr%d", ad->pa, ad->fn);
-#endif
 	ad->dvr = open(buf, O_RDONLY | O_NONBLOCK);
+#endif
 	if (ad->fe < 0 || ad->dvr < 0)
 	{
 #ifdef AXE
@@ -359,7 +361,7 @@ int dvb_open_device(adapter *ad)
 			close(ad->fe);
 		if (ad->dvr >= 0)
 			close(ad->dvr);
-		ad->fe = ad->dvr = -1;
+		ad->fe = ad->fe2 = ad->dvr = -1;
 		return 1;
 	}
 	ad->type = ADAPTER_DVB;
@@ -606,6 +608,7 @@ int setup_switch(int frontend_fd, adapter *ad, transponder *tp)
 	adapter *ad2, *adm;
 	int input = 0, aid;
 
+	ad->axe_feused = 1;
 	if (tp->diseqc_param.switch_type != SWITCH_UNICABLE &&
 	    tp->diseqc_param.switch_type != SWITCH_JESS) {
 		input = aid;
@@ -629,13 +632,10 @@ int setup_switch(int frontend_fd, adapter *ad, transponder *tp)
 				     adm->old_diseqc != diseqc))
 					return 0;
 			}
+			adm->axe_used |= (1 << aid);
+			adm->axe_feused = 1;
 			if (ad->slave) {
 				input = ad->slave - 1;
-				adm = get_adapter(input);
-				if (adm == NULL) {
-					LOG("axe_fe: unknown master adapter %d", input);
-					return 0;
-				}
 				if(adm->old_pol != pol ||
 				   adm->old_hiband != hiband ||
 				   adm->old_diseqc != diseqc) {
@@ -670,6 +670,9 @@ int setup_switch(int frontend_fd, adapter *ad, transponder *tp)
 				adm->old_hiband = hiband;
 				adm->old_diseqc = diseqc = 0;
 			}
+			adm->axe_used |= (1 << aid);
+			adm->axe_feused = 1;
+			goto axe;
 		}
 	} else {
 		input = opts.axe_unicinp[ad->id & 3];
@@ -678,6 +681,8 @@ int setup_switch(int frontend_fd, adapter *ad, transponder *tp)
 			LOGL(3, "axe setup: unable to find adapter %d", input);
 			return 0;
 		}
+		ad->axe_used |= (1 << aid);
+		ad->axe_feused = 1;
 	}
 #endif
 
@@ -1253,23 +1258,30 @@ int dvb_close(adapter *a2)
 {
 #ifdef AXE
 	adapter *c;
-	int aid, fe = a2->fe;
-	if (fe <= 0)
+	int aid;
+	if (a2->fe < 0)
 		return;
-	axe_fe_reset(fe);
+	if (a2->fe2 >= 0)
+		axe_fe_reset(a2->fe2);
 	for (aid = 0; aid < 4; aid++)
-		if (aid != a2->id && a[aid]->sid_cnt > 0) break;
-	if (aid >= 4) {
-		LOG("AXE standby");
-		for (aid = 0; aid < 4; aid++) {
-			c = a[aid];
-			axe_fe_standby(c->fe, -1);
-			axe_set_tuner_led(aid + 1, 0);
-			ioctl(c->fe, FE_SET_VOLTAGE, SEC_VOLTAGE_OFF);
-			c->old_diseqc = c->old_pol = c->old_hiband = -1;
+		a[aid]->axe_used &= ~(1 << aid);
+	for (aid = 0; aid < 4; aid++) {
+		c = a[aid];
+		if (c->axe_used != 0 || c->sid_cnt > 0) {
+			LOG("AXE standby: adapter %d busy (cnt=%d/used=%04x/fe=%d), keeping",
+			    aid, c->sid_cnt, c->axe_used, c->fe);
+			continue;
 		}
-	} else {
-		LOG("AXE standby: adapter %d busy (%d), keeping", aid, a[aid]->sid_cnt);
+		if (c->fe2 < 0 || c->axe_feused == 0)
+			continue;
+		LOG("AXE standby: adapter %d", aid);
+		axe_fe_standby(c->fe2, -1);
+		axe_set_tuner_led(aid + 1, 0);
+		ioctl(c->fe2, FE_SET_VOLTAGE, SEC_VOLTAGE_OFF);
+		close(c->fe2);
+		c->fe2 = -1;
+		c->axe_feused = 0;
+		c->old_diseqc = c->old_pol = c->old_hiband = -1;
 	}
 	axe_set_tuner_led(a2->id + 1, 0);
 	return 0;

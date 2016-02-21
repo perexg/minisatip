@@ -66,8 +66,8 @@ typedef struct struct_adapter
 {
 	char enabled;
 	SMutex mutex;
-	char type, slow_dev; // available on the system
-	int fe, dvr, dmx;
+	char type, slow_dev; // available on the system 
+	int fe, fe2, dvr, dmx;
 	int pa, fn;
 	// physical adapter, physical frontend number
 	fe_delivery_system_t sys[MAX_DELSYS];
@@ -91,6 +91,8 @@ typedef struct struct_adapter
 	uint32_t pid_err, dec_err; // detect pids received but not part of any stream, decrypt errors
 	diseqc diseqc_param;
 	int slave;
+	int axe_used;
+	int axe_feused;
 	int old_diseqc;
 	int old_hiband;
 	int old_pol;
