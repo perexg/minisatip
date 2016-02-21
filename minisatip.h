@@ -36,6 +36,7 @@ void set_options (int argc, char *argv[]);
 #define QUATTRO_HIBAND_OPT 'Z'
 #define AXE_UNICINP_OPT 'X'
 #define AXE_SKIP_PKT 'M'
+#define AXE_POWER 'P'
 
 #define PID_FILE "/var/run/minisatip.pid"
 struct struct_opts
@@ -61,6 +62,7 @@ struct struct_opts
 	int quattro_hiband;
 	int axe_unicinp[4];
 	int axe_skippkt;
+	int axe_power;
 	char *last_log;	
 	char playlist[200];
 };

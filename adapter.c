@@ -232,12 +232,16 @@ close_adapter (int na)
 	//      if(a[na].dmx>0)close(a[na].dmx);
 #ifdef AXE
 	if (a[na].fe > 0) {
-		int i;
+		int i, j;
 		a[na].fe = 0;
 		if (a[na].fe2 > 0)
 			axe_fe_reset(a[na].fe2);
-		for (i = 0; i < 4; i++)
+		for (i = j = 0; i < 4; i++) {
 			a[i].axe_used &= ~(1 << na);
+			if (a[i].axe_used || a[i].sid_cnt > 0) j++;
+		}
+		if (j > 0 && opts.axe_power > 1)
+			goto nostandby;
 		for (i = 0; i < 4; i++) {
 			if (a[i].axe_used != 0 || a[i].sid_cnt > 0) {
 				LOG("AXE standby: adapter %d busy (cnt=%d/used=%04x/fe=%d), keeping",
@@ -255,6 +259,7 @@ close_adapter (int na)
 			a[i].tp.old_diseqc = a[i].tp.old_pol = a[i].tp.old_hiband = -1;
 		}
 	}
+nostandby:
 	axe_set_tuner_led(na + 1, 0);
 #else
 	if (a[na].fe > 0)

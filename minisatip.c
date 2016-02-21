@@ -74,6 +74,7 @@ usage ()
 		-Z X: enable loband (0) or hiband (1) only for quattro LNB\n\
 		-X X[,Y]: AXE unicable/jess input (0-3) for all tuners\n\
 		-M X: skip initial MPEG-TS packets for AXE demuxer (default 35)\n\
+		-P X: power to all inputs (0 = only active inputs, 1 = all inputs)\n\
 		",
 		DVR_BUFFER / 1024);
 	exit (1);
@@ -110,7 +111,7 @@ set_options (int argc, char *argv[])
 	opts.axe_skippkt = 35;
 	memset(opts.playlist, sizeof(opts.playlist), 0);
 	
-	while ((opt = getopt (argc, argv, "flr:a:t:d:w:p:shc:b:m:p:e:x:u:j:gL:QZ:X:S:")) != -1)
+	while ((opt = getopt (argc, argv, "flr:a:t:d:w:p:shc:b:m:p:e:x:u:j:gL:QZ:X:S:P:")) != -1)
 	{
 		//              printf("options %d %c %s\n",opt,opt,optarg);
 		switch (opt)
@@ -243,6 +244,12 @@ set_options (int argc, char *argv[])
                         case QUATTRO_HIBAND_OPT:
                         {
                                 opts.quattro_hiband = atoi(optarg) + 1;
+                                break;
+                        }
+
+                        case AXE_POWER:
+                        {
+                                opts.axe_power = atoi(optarg) + 1;
                                 break;
                         }
 

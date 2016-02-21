@@ -224,6 +224,8 @@ void axe_wakeup(int voltage)
 {
 	int i;
 	adapter *a;
+	if (opts.axe_power < 2)
+		return;
 	for (i = 0; i < 4; i++) {
 		a = get_adapter(i);
 		if (a == NULL || a->force_disable)
