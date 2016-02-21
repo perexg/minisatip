@@ -415,6 +415,31 @@ void diseqc_cmd(int fd, int times, char *str, struct dvb_diseqc_master_cmd *cmd,
 
 }
 
+#ifdef AXE
+void axe_wakeup(int voltage)
+{
+	int i;
+	adapter *a;
+	if (opts.axe_power < 2)
+		return;
+	for (i = 0; i < 4; i++) {
+		a = get_adapter(i);
+		if (a == NULL || is_adapter_disabled(i))
+			continue;
+		if (a->old_pol >= 0)
+			return;
+	}
+	LOG("AXE wakeup");
+	for (i = 0; i < 4; i++) {
+		a = get_adapter(i);
+		if (a == NULL || is_adapter_disabled(i))
+			continue;
+		if (ioctl(a->fe, FE_SET_VOLTAGE, voltage) == -1)
+			LOG("axe_wakeup: FE_SET_VOLTAGE failed fd %d: %s", a->fe, strerror(errno));
+	}
+}
+#endif
+
 int send_diseqc(int fd, int pos, int pos_change, int pol, int hiband, diseqc *d)
 {
 	int committed_no = d->committed_no;
@@ -450,6 +475,9 @@ int send_diseqc(int fd, int pos, int pos_change, int pol, int hiband, diseqc *d)
 	LOGL(3, "send_diseqc fd %d, pos = %d (c %d u %d), pol = %d, hiband = %d",
 			fd, pos, posc, posu, pol, hiband);
 
+#ifdef AXE
+	axe_wakeup(pol ? SEC_VOLTAGE_18 : SEC_VOLTAGE_13);
+#endif
 	if (ioctl(fd, FE_SET_TONE, SEC_TONE_OFF) == -1)
 		LOG("send_diseqc: FE_SET_TONE failed for fd %d: %s", fd,
 				strerror(errno));
@@ -512,6 +540,9 @@ int send_unicable(int fd, int freq, int pos, int pol, int hiband, diseqc *d)
 			"send_unicable fd %d, freq %d, ufreq %d, pos = %d, pol = %d, hiband = %d, slot %d, diseqc => %02x %02x %02x %02x %02x",
 			fd, freq, d->ufreq, pos, pol, hiband, d->uslot, cmd.msg[0],
 			cmd.msg[1], cmd.msg[2], cmd.msg[3], cmd.msg[4]);
+#ifdef AXE
+	axe_wakeup(SEC_VOLTAGE_13);
+#endif
 	if (ioctl(fd, FE_SET_VOLTAGE, SEC_VOLTAGE_13) == -1)
 		LOG("send_unicable: pre voltage  SEC_VOLTAGE_13 failed for fd %d: %s",
 				fd, strerror(errno));
@@ -559,6 +590,9 @@ int send_jess(int fd, int freq, int pos, int pol, int hiband, diseqc *d)
 			fd, freq, d->ufreq, pos, pol, hiband, d->uslot, cmd.msg[0],
 			cmd.msg[1], cmd.msg[2], cmd.msg[3], cmd.msg[4]);
 
+#ifdef AXE
+	axe_wakeup(SEC_VOLTAGE_13);
+#endif
 	if (ioctl(fd, FE_SET_VOLTAGE, SEC_VOLTAGE_13) == -1)
 		LOG("send_jess: pre voltage  SEC_VOLTAGE_13 failed for fd %d: %s", fd,
 				strerror(errno));
@@ -1258,13 +1292,18 @@ int dvb_close(adapter *a2)
 {
 #ifdef AXE
 	adapter *c;
-	int aid;
+	int aid, busy;
 	if (a2->fe < 0)
 		return;
 	if (a2->fe2 >= 0)
 		axe_fe_reset(a2->fe2);
-	for (aid = 0; aid < 4; aid++)
-		a[aid]->axe_used &= ~(1 << aid);
+	for (aid = busy = 0; aid < 4; aid++) {
+		c = a[aid];
+		c->axe_used &= ~(1 << aid);
+		if (c->axe_used || c->sid_cnt > 0) busy++;
+	}
+	if (busy > 0 && opts.axe_power > 1)
+		goto nostandby;
 	for (aid = 0; aid < 4; aid++) {
 		c = a[aid];
 		if (c->axe_used != 0 || c->sid_cnt > 0) {
@@ -1283,6 +1322,7 @@ int dvb_close(adapter *a2)
 		c->axe_feused = 0;
 		c->old_diseqc = c->old_pol = c->old_hiband = -1;
 	}
+nostandby:
 	axe_set_tuner_led(a2->id + 1, 0);
 	return 0;
 #else

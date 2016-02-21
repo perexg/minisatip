@@ -57,6 +57,7 @@ struct struct_opts
 	int quattro_hiband;
 	int axe_unicinp[4];
 	int axe_skippkt;
+	int axe_power;
 	char *last_log;	
 	int dvbapi_port;
 	char *dvbapi_host;

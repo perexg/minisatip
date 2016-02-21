@@ -134,6 +134,7 @@ static const struct option long_options[] =
 #define QUATTRO_HIBAND_OPT 'Z'
 #define AXE_UNICINP_OPT 'U'
 #define AXE_SKIP_PKT 'M'
+#define AXE_POWER 'P'
 
 
 char *built_info[] =
@@ -353,6 +354,8 @@ Help\n\
 \t* The format is: M1:S1[,M2:S2] - master:slave\n\
 	* eg: 0:1,0:2,0:3 \n\
 \n\
+* -P --power num: power to all inputs (0 = only active inputs, 1 = all inputs)\n\
+\n\
 * -Q --quattro  quattro LNB config (H/H,H/V,L/H,L/V)\n\
 \n\
 * -Z --quattro-hiband hiband\n\
@@ -426,7 +429,7 @@ void set_options(int argc, char *argv[])
 	memset(opts.playlist, 0, sizeof(opts.playlist));
 
 	while ((opt = getopt_long(argc, argv,
-			"flr:a:td:w:p:s:n:hc:b:m:p:e:x:u:j:o:gy:i:q:D:VR:S:TX:Y:OL:QU:M:",
+			"flr:a:td:w:p:s:n:hc:b:m:p:e:x:u:j:o:gy:i:q:D:VR:S:TX:Y:OL:QZ:U:M:P:",
 			long_options, NULL)) != -1)
 	{
 		//              printf("options %d %c %s\n",opt,opt,optarg);
@@ -688,15 +691,17 @@ void set_options(int argc, char *argv[])
 			set_unicable_input(optarg);
 			break;
 
+		case AXE_POWER:
+			opts.axe_power = atoi(optarg) + 1;
+			break;
+
 		case AXE_SKIP_PKT:
-		{
 			opts.axe_skippkt = atoi(optarg);
 			if (opts.axe_skippkt < 0)
 				opts.axe_skippkt = 0;
 			if (opts.axe_skippkt > 200)
 				opts.axe_skippkt = 200;
 			break;
-		}
 #endif
 		}
 
