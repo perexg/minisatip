@@ -336,7 +336,7 @@ int dvb_open_device(adapter *ad)
 			ad->fn);
 #ifdef AXE
 	sprintf(buf, "/dev/axe/frontend-%d", ad->pa);
-	if (ad->fe2 >= 0)
+	if (ad->fe2 > 0)
 		ad->fe = ad->fe2;
 	else
 		ad->fe = ad->fe2 = open(buf, O_RDWR | O_NONBLOCK);
@@ -1293,9 +1293,10 @@ int dvb_close(adapter *a2)
 #ifdef AXE
 	adapter *c;
 	int aid, busy;
-	if (a2->fe < 0)
+	if (a2->fe <= 0)
 		return;
-	if (a2->fe2 >= 0)
+	a2->fe = -1;
+	if (a2->fe2 > 0)
 		axe_fe_reset(a2->fe2);
 	for (aid = busy = 0; aid < 4; aid++) {
 		c = a[aid];
