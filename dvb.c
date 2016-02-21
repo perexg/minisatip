@@ -375,17 +375,18 @@ int setup_switch (int frontend_fd, transponder *tp)
 	adapter *ad, *ad2, *adm;
 	int input = 0, aid;
 
+	for (aid = 0; aid < 4; aid++) {
+		ad = get_adapter(aid);
+		LOGL(3, "axe adapter %i fe fd %d", aid, ad->fe);
+		if (ad && ad->fe == frontend_fd)
+			break;
+	}
+	if (aid >= 4) {
+		LOG("axe_fe: unknown adapter for fd %d", frontend_fd);
+		return 0;
+	}
+	ad->axe_feused = 1;
 	if (tp->switch_type != SWITCH_UNICABLE && tp->switch_type != SWITCH_JESS) {
-		for (aid = 0; aid < 4; aid++) {
-			ad = get_adapter(aid);
-			LOGL(3, "axe adapter %i fe fd %d", aid, ad->fe);
-			if (ad && ad->fe == frontend_fd)
-				break;
-		}
-		if (aid >= 4) {
-			LOG("axe_fe: unknown adapter for fd %d", frontend_fd);
-			return 0;
-		}
 		input = aid;
 		if (ad && !opts.quattro) {
 			adm = get_adapter(ad->slave ? ad->slave - 1 : ad->pa);
@@ -407,20 +408,17 @@ int setup_switch (int frontend_fd, transponder *tp)
 				     adm->tp.old_diseqc != diseqc))
 					return 0;
 			}
+			adm->axe_used |= (1 << aid);
+			adm->axe_feused = 1;
 			if (ad->slave) {
 				input = ad->slave - 1;
-				adm = get_adapter(input);
-				if (adm == NULL) {
-					LOG("axe_fe: unknown master adapter %d", input);
-					return 0;
-				}
 				if(adm->tp.old_pol != pol ||
 				   adm->tp.old_hiband != hiband ||
 				   adm->tp.old_diseqc != diseqc) {
 					send_diseqc(adm->fe, diseqc, pol, hiband);
-					adm->tp.old_pol = pol;
-					adm->tp.old_hiband = hiband;
-					adm->tp.old_diseqc = diseqc;
+					adm->tp.old_pol = tp->old_pol = pol;
+					adm->tp.old_hiband = tp->old_hiband = hiband;
+					adm->tp.old_diseqc = tp->old_diseqc = diseqc;
 				}
 				goto axe;
 			}
@@ -446,6 +444,9 @@ int setup_switch (int frontend_fd, transponder *tp)
 				adm->tp.old_hiband = hiband;
 				adm->tp.old_diseqc = 0;
 			}
+			adm->axe_used |= (1 << aid);
+			adm->axe_feused = 1;
+			goto axe;
 		}
 	} else {
 		input = opts.axe_unicinp[input & 3];
@@ -454,6 +455,8 @@ int setup_switch (int frontend_fd, transponder *tp)
 			LOGL(3, "axe setup: unable to find adapter %d", input);
 			return 0;
 		}
+		ad->axe_used |= (1 << aid);
+		ad->axe_feused = 1;
 	}
 #endif
 

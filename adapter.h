@@ -24,7 +24,7 @@ typedef struct struct_adapter
 {
 	int enabled;
 	int force_disable;
-	int fe,	dvr;
+	int fe,	fe2, dvr;
 	int pa, fn;		
 		// physical adapter, physical frontend number
 	fe_delivery_system_t sys[10]; 
@@ -46,6 +46,8 @@ typedef struct struct_adapter
 	int uslot; // unicable/jess slot
 	int ufreq; // unicable/jess frequency	
 	int slave;
+	int axe_used;
+	int axe_feused;
 } adapter;
 
 int init_hw ();

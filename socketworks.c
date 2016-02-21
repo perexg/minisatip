@@ -454,7 +454,7 @@ select_and_execute ()
 						}
 						if (rlen == 0 || (rlen < 0 || errno == -EAGAIN))
 							rlen = 1;
-						if (ss->skiplen > 0) {
+						if (ss->skiplen > 0 && ss->rlen > 0) {
 							LOG("AXE skip: before rlen %d skiplen %d", ss->rlen, ss->skiplen);
 							if (ss->skiplen >= ss->rlen) {
 								ss->skiplen -= ss->rlen;

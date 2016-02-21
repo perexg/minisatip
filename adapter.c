@@ -147,10 +147,15 @@ init_hw ()
 		sprintf (buf, "/dev/axe/frontend-%d", a[i].pa);
 #else
 		sprintf (buf, "/dev/dvb/adapter%d/frontend%d", a[i].pa, a[i].fn);
+		if (a[i].fe2 > 0)
+			a[i].fe = a[i].fe2;
+		else
 #endif
-		a[i].fe = open (buf, O_RDWR | O_NONBLOCK);
+		a[i].fe = a[i].fe2 = open (buf, O_RDWR | O_NONBLOCK);
 
 #ifdef AXE
+		a[i].fe2 = a[i].fe;
+		a[i].axe_feused = 0;
 		sprintf (buf, "/dev/axe/demuxts-%d", a[i].pa);
 #else
 		sprintf (buf, "/dev/dvb/adapter%d/dvr%d", a[i].pa, a[i].fn);
@@ -211,7 +216,6 @@ init_hw ()
 	return num_adapters;
 }
 
-
 void
 close_adapter (int na)
 {
@@ -229,25 +233,33 @@ close_adapter (int na)
 #ifdef AXE
 	if (a[na].fe > 0) {
 		int i;
-		axe_fe_reset(a[na].fe);
+		a[na].fe = 0;
+		if (a[na].fe2 > 0)
+			axe_fe_reset(a[na].fe2);
 		for (i = 0; i < 4; i++)
-			if (i != na && a[i].sid_cnt > 0) break;
-		if (i >= 4) {
-			LOG("AXE standby");
-			for (i = 0; i < 4; i++) {
-				axe_fe_standby(a[i].fe, -1);
-				axe_set_tuner_led(i + 1, 0);
-				ioctl(a[i].fe, FE_SET_VOLTAGE, SEC_VOLTAGE_OFF);
-				a[i].tp.old_diseqc = a[i].tp.old_pol = a[i].tp.old_hiband = -1;
+			a[i].axe_used &= ~(1 << na);
+		for (i = 0; i < 4; i++) {
+			if (a[i].axe_used != 0 || a[i].sid_cnt > 0) {
+				LOG("AXE standby: adapter %d busy (cnt=%d/used=%04x/fe=%d), keeping",
+				    i, a[i].sid_cnt, a[i].axe_used, a[i].fe);
+				continue;
 			}
-		} else {
-			LOG("AXE standby: adapter %d busy (%d), keeping", i, a[i].sid_cnt);
+			if (a[i].fe2 <= 0 || a[i].axe_feused == 0)
+				continue;
+			LOG("AXE standby: adapter %d", i);
+			axe_fe_standby(a[i].fe2, -1);
+			axe_set_tuner_led(i + 1, 0);
+			ioctl(a[i].fe2, FE_SET_VOLTAGE, SEC_VOLTAGE_OFF);
+			close(a[i].fe2);
+			a[i].fe2 = a[i].axe_feused = 0;
+			a[i].tp.old_diseqc = a[i].tp.old_pol = a[i].tp.old_hiband = -1;
 		}
 	}
 	axe_set_tuner_led(na + 1, 0);
-#endif
+#else
 	if (a[na].fe > 0)
 		close (a[na].fe);
+#endif
 	if (a[na].sock >= 0)
 		sockets_del (a[na].sock);
 	a[na].fe = 0;
