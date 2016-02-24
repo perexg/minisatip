@@ -685,14 +685,14 @@ int setup_switch(int frontend_fd, adapter *ad, transponder *tp)
 				     adm->old_diseqc != diseqc))
 					return 0;
 			}
-			adm->axe_used |= (1 << aid);
+			adm->axe_used |= (1 << input);
 			adm->axe_feused = 1;
 			if (ad->slave) {
 				input = ad->slave - 1;
 				if(adm->old_pol != pol ||
 				   adm->old_hiband != hiband ||
 				   adm->old_diseqc != diseqc) {
-					send_diseqc(adm->fe, diseqc, ad->old_diseqc != diseqc,
+					send_diseqc(adm->fe, diseqc, adm->old_diseqc != diseqc,
 						    pol, hiband, &tp->diseqc_param);
 					adm->old_pol = pol;
 					adm->old_hiband = hiband;
@@ -723,12 +723,13 @@ int setup_switch(int frontend_fd, adapter *ad, transponder *tp)
 				adm->old_hiband = hiband;
 				adm->old_diseqc = diseqc = 0;
 			}
-			adm->axe_used |= (1 << aid);
+			adm->axe_used |= (1 << input);
 			adm->axe_feused = 1;
 			goto axe;
 		}
 	} else {
-		input = opts.axe_unicinp[ad->id & 3];
+		aid = ad->id & 3;
+		input = opts.axe_unicinp[aid];
 		ad = get_adapter(input);
 		if (ad == NULL) {
 			LOGL(3, "axe setup: unable to find adapter %d", input);
