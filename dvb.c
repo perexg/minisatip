@@ -407,7 +407,7 @@ int setup_switch (int frontend_fd, transponder *tp)
 	ad->axe_feused = 1;
 	if (tp->switch_type != SWITCH_UNICABLE && tp->switch_type != SWITCH_JESS) {
 		input = aid;
-		if (ad && (!opts.quattro || extra_quattro(aid, diseqc, &equattro))) {
+		if (ad && (!opts.quattro || extra_quattro(input, diseqc, &equattro))) {
 			if (equattro > 0)
 				diseqc = equattro - 1;
 			adm = get_adapter(ad->slave ? ad->slave - 1 : ad->pa);
@@ -429,7 +429,7 @@ int setup_switch (int frontend_fd, transponder *tp)
 				     adm->tp.old_diseqc != diseqc))
 					return 0;
 			}
-			adm->axe_used |= (1 << aid);
+			adm->axe_used |= (1 << input);
 			adm->axe_feused = 1;
 			if (ad->slave) {
 				input = ad->slave - 1;
@@ -470,7 +470,7 @@ int setup_switch (int frontend_fd, transponder *tp)
 			goto axe;
 		}
 	} else {
-		input = opts.axe_unicinp[input & 3];
+		input = opts.axe_unicinp[aid];
 		ad = get_adapter(input);
 		if (ad == NULL) {
 			LOGL(3, "axe setup: unable to find adapter %d", input);
