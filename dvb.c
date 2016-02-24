@@ -355,6 +355,23 @@ int send_jess(int fd, int freq, int pos, int pol, int hiband, int slot, int ufre
 	return ufreq * 1000;	
 }
 
+#ifdef AXE
+static inline int extra_quattro(int input, int diseqc, int *equattro)
+{
+  if (diseqc <= 0)
+    *equattro = 0;
+  /* lowband allowed - control the hiband inputs independently for positions src=2+ */
+  else if (opts.quattro_hiband == 1 && input < 2)
+    *equattro = diseqc - 1;
+  /* hiband allowed - control the lowband inputs independently for positions src=2+ */
+  else if (opts.quattro_hiband == 2 && input >= 2 && input < 4)
+    *equattro = diseqc - 1;
+  else
+    *equattro = 0;
+  return *equattro;
+}
+#endif
+
 int setup_switch (int frontend_fd, transponder *tp)
 {
 	int i;
@@ -375,7 +392,7 @@ int setup_switch (int frontend_fd, transponder *tp)
 	
 #ifdef AXE
 	adapter *ad, *ad2, *adm;
-	int input = 0, aid;
+	int input = 0, aid, equattro = 0;
 
 	for (aid = 0; aid < 4; aid++) {
 		ad = get_adapter(aid);
@@ -390,7 +407,9 @@ int setup_switch (int frontend_fd, transponder *tp)
 	ad->axe_feused = 1;
 	if (tp->switch_type != SWITCH_UNICABLE && tp->switch_type != SWITCH_JESS) {
 		input = aid;
-		if (ad && !opts.quattro) {
+		if (ad && (!opts.quattro || extra_quattro(aid, diseqc, &equattro))) {
+			if (equattro > 0)
+				diseqc = equattro - 1;
 			adm = get_adapter(ad->slave ? ad->slave - 1 : ad->pa);
 			if (adm == NULL) {
 				LOG("axe_fe: unknown master adapter %d", input);
