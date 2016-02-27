@@ -248,14 +248,15 @@ close_adapter (int na)
 				    i, a[i].sid_cnt, a[i].axe_used, a[i].fe);
 				continue;
 			}
-			if (a[i].fe2 <= 0 || a[i].axe_feused == 0)
+			if (a[i].fe2 < 0)
 				continue;
 			LOG("AXE standby: adapter %d", i);
 			axe_fe_standby(a[i].fe2, -1);
 			axe_set_tuner_led(i + 1, 0);
 			ioctl(a[i].fe2, FE_SET_VOLTAGE, SEC_VOLTAGE_OFF);
 			close(a[i].fe2);
-			a[i].fe2 = a[i].axe_feused = 0;
+			a[i].fe2 = -1;
+			a[i].axe_feused = 0;
 			a[i].tp.old_diseqc = a[i].tp.old_pol = a[i].tp.old_hiband = -1;
 		}
 	}
