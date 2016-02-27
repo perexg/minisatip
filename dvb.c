@@ -1332,7 +1332,7 @@ int dvb_close(adapter *a2)
 			    aid, c->sid_cnt, c->axe_used, c->fe);
 			continue;
 		}
-		if (c->fe2 < 0 || c->axe_feused == 0)
+		if (c->fe2 < 0)
 			continue;
 		LOG("AXE standby: adapter %d", aid);
 		axe_fe_standby(c->fe2, -1);
