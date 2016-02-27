@@ -127,6 +127,7 @@ int adapter_timeout(sockets *s)
 		return 0;
 	}
 
+#ifndef AXE
 	if (opts.no_threads)
 	{
 		for (i = 0; i < MAX_ADAPTERS; i++)
@@ -143,6 +144,7 @@ int adapter_timeout(sockets *s)
 			s->sid, do_close, max_close);
 	if (!do_close)
 		s->rtime = max_close;
+#endif
 
 	return do_close;
 }

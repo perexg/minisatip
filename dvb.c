@@ -1327,6 +1327,8 @@ int dvb_close(adapter *a2)
 		goto nostandby;
 	for (aid = 0; aid < 4; aid++) {
 		c = a[aid];
+		if (opts.axe_power < 2 && c != a2)
+			continue;
 		if (c->axe_used != 0 || c->sid_cnt > 0) {
 			LOG("AXE standby: adapter %d busy (cnt=%d/used=%04x/fe=%d), keeping",
 			    aid, c->sid_cnt, c->axe_used, c->fe);
