@@ -341,6 +341,14 @@ sockets_del (int sock)
 }
 
 void
+sockets_set_poll (int sock, int enable)
+{
+  if (sock < 0 || sock > MAX_SOCKS)
+    return;
+  pf[sock].events = enable ? (POLLIN | POLLPRI) : 0;
+}
+
+void
 sockets_reset (int sock)
 {
 	int i;
@@ -360,7 +368,6 @@ uint32_t nsecs, reads;
 int
 select_and_execute ()
 {
-	fd_set io;
 	struct timeval tv;
 	socklen_t slen;
 	int i,
@@ -374,7 +381,6 @@ select_and_execute ()
 	lt = getTick ();
 	while (run_loop)
 	{
-		FD_ZERO (&io);
 		i = -1;
 		//    LOG("start select");
 		if ((rv = poll (pf, max_sock, 200)) < 0)
@@ -545,8 +551,6 @@ select_and_execute ()
 				&& ((s[i].close_sec > 0 && lt - s[i].rtime > s[i].close_sec)
 				|| (s[i].close_sec == 1)))
 			{
-				int do_close = 0;
-
 				//                                              LOG("Timeout idle connection %d index %d",s[i].sock,i);
 				if (s[i].timeout && s[i].timeout (&s[i]))
 					sockets_del (i);

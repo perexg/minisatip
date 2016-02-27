@@ -44,6 +44,7 @@ int get_sock_port(int fd);
 int sockets_add (int sock, struct sockaddr_in *sa, int sid, int type,
 socket_action a, socket_action c, socket_action t);
 int sockets_del (int sock);
+void sockets_set_poll (int sock, int enable);
 void sockets_reset (int sock);
 int no_action (int s);
 int select_and_execute ();

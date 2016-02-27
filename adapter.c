@@ -90,6 +90,7 @@ find_adapters ()
 // avoid adapter close unless all the adapters can be closed
 int adapter_timeout(sockets *s)
 {
+#ifndef AXE
 	int do_close = 1, i, max_close = 0;
 	int rtime = getTick();
 	for (i = 0; i < MAX_ADAPTERS; i++)
@@ -105,6 +106,10 @@ int adapter_timeout(sockets *s)
 		s->rtime = max_close;
 	
 	return do_close;	
+#else
+	LOG("Requested adapter %d close", s->sid);
+	return 1;
+#endif
 }
 
 int
@@ -243,6 +248,8 @@ close_adapter (int na)
 		if (j > 0 && opts.axe_power > 1)
 			goto nostandby;
 		for (i = 0; i < 4; i++) {
+			if (opts.axe_power < 2 && i != na)
+				continue;
 			if (a[i].axe_used != 0 || a[i].sid_cnt > 0) {
 				LOG("AXE standby: adapter %d busy (cnt=%d/used=%04x/fe=%d), keeping",
 				    i, a[i].sid_cnt, a[i].axe_used, a[i].fe);
@@ -413,6 +420,7 @@ set_adapter_for_stream (int sid, int aid)
 	if (a[aid].master_sid == -1)
 		a[aid].master_sid = sid;
 	a[aid].sid_cnt++;
+	sockets_set_poll(a[aid].sock, 1);
 	LOG ("set adapter %d for stream %d m:%d s:%d", aid, sid, a[aid].master_sid, a[aid].sid_cnt);
 	return 0;
 }
@@ -436,8 +444,12 @@ close_adapter_for_stream (int sid, int aid)
 								 // delete the attached PIDs as well
 	mark_pids_deleted (aid, sid, NULL);
 	update_pids (aid);
-	if (a[aid].sid_cnt == 0)
-		close_adapter (aid);
+	if (a[aid].sid_cnt == 0) {
+#ifdef AXE
+		axe_set_tuner_led(aid + 1, 0);
+#endif
+		sockets_set_poll(a[aid].sock, 0);
+	}
 }
 
 
