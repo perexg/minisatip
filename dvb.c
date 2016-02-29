@@ -220,9 +220,9 @@ msleep (uint32_t msec)
 }
 
 #ifdef AXE
-void axe_wakeup(int voltage)
+void axe_wakeup(int fe_fd, int voltage)
 {
-	int i;
+	int i, mask;
 	adapter *a;
 	if (opts.axe_power < 2)
 		return;
@@ -234,7 +234,22 @@ void axe_wakeup(int voltage)
 			return;
 	}
 	LOG("AXE wakeup");
-	for (i = 0; i < 4; i++) {
+	for (i = mask = 0; i < 4; i++) {
+		/* lowband enabled */
+		if (opts.quattro && opts.quattro_hiband == 1 && i < 2) {
+			mask = 3;
+			continue;
+		}
+		/* hiband enabled */
+		if (opts.quattro && opts.quattro_hiband == 2 && i >= 2) {
+			mask = 3<<2;
+			continue;
+		}
+		mask |= 1<<i;
+	}
+	for (i = 0; i < 4 && mask; i++) {
+		if (((1 << i) & mask) == 0)
+			continue;
 		a = get_adapter(i);
 		if (a == NULL || a->force_disable)
 			continue;
@@ -259,7 +274,7 @@ int send_diseqc(int fd, int pos, int pol, int hiband)
 	if (ioctl(fd, FE_SET_TONE, SEC_TONE_OFF) == -1)
 		LOG("send_diseqc: FE_SET_TONE failed for fd %d: %s", fd, strerror(errno));
 #ifdef AXE
-	axe_wakeup(pol ? SEC_VOLTAGE_18 : SEC_VOLTAGE_13);
+	axe_wakeup(fd, pol ? SEC_VOLTAGE_18 : SEC_VOLTAGE_13);
 #endif
 	if (ioctl(fd, FE_SET_VOLTAGE, pol ? SEC_VOLTAGE_18 : SEC_VOLTAGE_13) == -1)
 		LOG("send_diseqc: FE_SET_VOLTAGE failed for fd %d: %s", fd, strerror(errno));
@@ -299,7 +314,7 @@ int send_unicable(int fd, int freq, int pos, int pol, int hiband, int slot, int 
 	LOGL(3, "send_unicable fd %d, freq %d, ufreq %d, pos = %d, pol = %d, hiband = %d, slot %d, diseqc => %02x %02x %02x %02x %02x",
                   fd, freq, ufreq, pos, pol, hiband, slot, cmd.msg[0], cmd.msg[1], cmd.msg[2], cmd.msg[3], cmd.msg[4]);
 #ifdef AXE
-	axe_wakeup(SEC_VOLTAGE_13);
+	axe_wakeup(fd, SEC_VOLTAGE_13);
 #endif
 	if (ioctl(fd, FE_SET_VOLTAGE, SEC_VOLTAGE_13) == -1)
 		LOG("send_unicable: pre voltage  SEC_VOLTAGE_13 failed for fd %d: %s", fd, strerror(errno));
@@ -336,7 +351,7 @@ int send_jess(int fd, int freq, int pos, int pol, int hiband, int slot, int ufre
                   fd, freq, ufreq, pos, pol, hiband, slot, cmd.msg[0], cmd.msg[1], cmd.msg[2], cmd.msg[3], cmd.msg[4]);
 
 #ifdef AXE
-	axe_wakeup(SEC_VOLTAGE_13);
+	axe_wakeup(fd, SEC_VOLTAGE_13);
 #endif
 	if (ioctl(fd, FE_SET_VOLTAGE, SEC_VOLTAGE_13) == -1)
 		LOG("send_jess: pre voltage  SEC_VOLTAGE_13 failed for fd %d: %s", fd, strerror(errno));
@@ -361,11 +376,11 @@ static inline int extra_quattro(int input, int diseqc, int *equattro)
   if (diseqc <= 0)
     *equattro = 0;
   /* lowband allowed - control the hiband inputs independently for positions src=2+ */
-  else if (opts.quattro_hiband == 1 && input < 2)
-    *equattro = diseqc - 1;
+  else if (opts.quattro && opts.quattro_hiband == 1 && input < 2)
+    *equattro = diseqc;
   /* hiband allowed - control the lowband inputs independently for positions src=2+ */
-  else if (opts.quattro_hiband == 2 && input >= 2 && input < 4)
-    *equattro = diseqc - 1;
+  else if (opts.quattro && opts.quattro_hiband == 2 && input >= 2 && input < 4)
+    *equattro = diseqc;
   else
     *equattro = 0;
   return *equattro;
@@ -443,8 +458,7 @@ int setup_switch (int frontend_fd, transponder *tp)
 				}
 				goto axe;
 			}
-		}
-		if (ad && opts.quattro) {
+		} else if (ad && opts.quattro) {
 			if (opts.quattro_hiband == 1 && hiband) {
 				LOG("axe_fe: hiband is not allowed for quattro config (adapter %d)", input);
 				return 0;

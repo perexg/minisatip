@@ -243,12 +243,12 @@ close_adapter (int na)
 			axe_fe_reset(a[na].fe2);
 		for (i = j = 0; i < 4; i++) {
 			a[i].axe_used &= ~(1 << na);
-			if (a[i].axe_used || a[i].sid_cnt > 0) j++;
+			if (a[i].axe_used || a[i].fe > 0) j++;
 		}
 		if (j > 0 && opts.axe_power > 1)
 			goto nostandby;
 		for (i = 0; i < 4; i++) {
-			if (opts.axe_power < 2 && i != na)
+			if (opts.axe_power < 2 && i != na && j)
 				continue;
 			if (a[i].axe_used != 0 || a[i].sid_cnt > 0) {
 				LOG("AXE standby: adapter %d busy (cnt=%d/used=%04x/fe=%d), keeping",
