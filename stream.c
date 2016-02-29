@@ -54,7 +54,7 @@ getTick ()
 {								 //ms
 	struct timespec ts;
 
-	clock_gettime (CLOCK_REALTIME, &ts);
+	clock_gettime (CLOCK_MONOTONIC, &ts);
 	theTick = ts.tv_nsec / 1000000;
 	theTick += ts.tv_sec * 1000;
 	ntime = ts.tv_sec * 1000000 + ts.tv_nsec;
