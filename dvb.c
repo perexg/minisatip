@@ -681,7 +681,7 @@ int setup_switch(int frontend_fd, adapter *ad, transponder *tp)
 		if (!opts.quattro || extra_quattro(input, diseqc, &equattro)) {
 			if (equattro > 0)
 				diseqc = equattro - 1;
-			adm = get_adapter(ad->slave ? ad->slave - 1 : ad->pa);
+			adm = get_adapter2(ad->slave ? ad->slave - 1 : ad->pa);
 			if (adm == NULL) {
 				LOG("axe_fe: unknown master adapter %d", input);
 				return 0;
@@ -725,7 +725,7 @@ int setup_switch(int frontend_fd, adapter *ad, transponder *tp)
 				return 0;
 			}
 			input = ((hiband ^ 1) << 1) | (pol ^ 1);
-			adm = get_adapter(input);
+			adm = get_adapter2(input);
 			if (adm == NULL) {
 				LOG("axe_fe: unknown master adapter %d", input);
 				return 0;
@@ -744,7 +744,7 @@ int setup_switch(int frontend_fd, adapter *ad, transponder *tp)
 	} else {
 		aid = ad->id & 3;
 		input = opts.axe_unicinp[aid];
-		ad = get_adapter(input);
+		ad = get_adapter2(input);
 		if (ad == NULL) {
 			LOGL(3, "axe setup: unable to find adapter %d", input);
 			return 0;

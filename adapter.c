@@ -1006,6 +1006,18 @@ get_adapter1(int aid, char *file, int line)
 	return a[aid];
 }
 
+adapter *
+get_adapter21(int aid, char *file, int line)
+{
+	if (aid < 0 || aid >= MAX_ADAPTERS || !a[aid] || disabled[aid])
+	{
+		LOG("%s:%d: get_adapter2 returns NULL for adapter_id %d", file, line,
+				aid);
+		return NULL;
+	}
+	return a[aid];
+}
+
 char* get_stream_pids(int s_id, char *dest, int max_size);
 char *
 describe_adapter(int sid, int aid, char *dad, int ld)
