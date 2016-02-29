@@ -250,7 +250,7 @@ void axe_wakeup(int fe_fd, int voltage)
 	for (i = 0; i < 4 && mask; i++) {
 		if (((1 << i) & mask) == 0)
 			continue;
-		a = get_adapter(i);
+		a = get_adapter2(i);
 		if (a == NULL || a->force_disable)
 			continue;
 		if (ioctl(a->fe, FE_SET_VOLTAGE, voltage) == -1)
@@ -425,7 +425,7 @@ int setup_switch (int frontend_fd, transponder *tp)
 		if (ad && (!opts.quattro || extra_quattro(input, diseqc, &equattro))) {
 			if (equattro > 0)
 				diseqc = equattro - 1;
-			adm = get_adapter(ad->slave ? ad->slave - 1 : ad->pa);
+			adm = get_adapter2(ad->slave ? ad->slave - 1 : ad->pa);
 			if (adm == NULL) {
 				LOG("axe_fe: unknown master adapter %d", input);
 				return 0;
@@ -468,7 +468,7 @@ int setup_switch (int frontend_fd, transponder *tp)
 				return 0;
 			}
 			input = ((hiband ^ 1) << 1) | (pol ^ 1);
-			adm = get_adapter(input);
+			adm = get_adapter2(input);
 			if (adm == NULL) {
 				LOG("axe_fe: unknown master adapter %d", input);
 				return 0;
@@ -485,7 +485,7 @@ int setup_switch (int frontend_fd, transponder *tp)
 		}
 	} else {
 		input = opts.axe_unicinp[aid];
-		ad = get_adapter(input);
+		ad = get_adapter2(input);
 		if (ad == NULL) {
 			LOGL(3, "axe setup: unable to find adapter %d", input);
 			return 0;

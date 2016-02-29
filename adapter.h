@@ -63,6 +63,7 @@ void mark_pids_deleted (int aid, int sid, char *pids);
 int mark_pids_add (int sid, int aid, char *pids);
 int update_pids (int aid);
 adapter * get_adapter1 (int aid, char *file, int line);
+adapter * get_adapter21 (int aid, char *file, int line);
 char *describe_adapter (int sid, int aid);
 void dump_pids (int aid);
 void sort_pids (int aid);
@@ -73,4 +74,5 @@ void set_unicable_input(char *o);
 int delsys_match(adapter *ad, int del_sys);
 
 #define get_adapter(a) get_adapter1(a, __FILE__, __LINE__)
+#define get_adapter2(a) get_adapter21(a, __FILE__, __LINE__)
 #endif							 /*  */
