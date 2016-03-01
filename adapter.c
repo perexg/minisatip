@@ -160,7 +160,6 @@ init_hw ()
 
 #ifdef AXE
 		a[i].fe2 = a[i].fe;
-		a[i].axe_feused = 0;
 		sprintf (buf, "/dev/axe/demuxts-%d", a[i].pa);
 #else
 		sprintf (buf, "/dev/dvb/adapter%d/dvr%d", a[i].pa, a[i].fn);
@@ -248,7 +247,7 @@ close_adapter (int na)
 		if (j > 0 && opts.axe_power > 1)
 			goto nostandby;
 		for (i = 0; i < 4; i++) {
-			if (opts.axe_power < 2 && i != na && j)
+			if (opts.axe_power < 2 && i != na && j && a[i].sock >= 0)
 				continue;
 			if (a[i].axe_used != 0 || a[i].sid_cnt > 0) {
 				LOG("AXE standby: adapter %d busy (cnt=%d/used=%04x/fe=%d), keeping",
@@ -263,7 +262,6 @@ close_adapter (int na)
 			ioctl(a[i].fe2, FE_SET_VOLTAGE, SEC_VOLTAGE_OFF);
 			close(a[i].fe2);
 			a[i].fe2 = -1;
-			a[i].axe_feused = 0;
 			a[i].tp.old_diseqc = a[i].tp.old_pol = a[i].tp.old_hiband = -1;
 		}
 	}
@@ -273,8 +271,10 @@ nostandby:
 	if (a[na].fe > 0)
 		close (a[na].fe);
 #endif
-	if (a[na].sock >= 0)
+	if (a[na].sock >= 0) {
 		sockets_del (a[na].sock);
+		a[na].sock = -1;
+	}
 	a[na].fe = 0;
 	//      if(a[na].buf)free1(a[na].buf);a[na].buf=NULL;
 	LOG ("done closing adapter %d", na);

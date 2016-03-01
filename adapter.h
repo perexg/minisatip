@@ -47,7 +47,6 @@ typedef struct struct_adapter
 	int ufreq; // unicable/jess frequency	
 	int slave;
 	int axe_used;
-	int axe_feused;
 } adapter;
 
 int init_hw ();
