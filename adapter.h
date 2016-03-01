@@ -92,7 +92,6 @@ typedef struct struct_adapter
 	diseqc diseqc_param;
 	int slave;
 	int axe_used;
-	int axe_feused;
 	int old_diseqc;
 	int old_hiband;
 	int old_pol;
