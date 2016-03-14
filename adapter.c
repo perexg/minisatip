@@ -1409,11 +1409,13 @@ void set_link_adapters(char *o)
 			continue;
 		b_id=map_intd(sep1 + 1, NULL, -1);
 		if (b_id < 0 || b_id >= MAX_ADAPTERS)
-			continue;;
-		if (a_id == b_id || a[a_id]->slave)
 			continue;
-		a[a_id]->slave = a_id + 1;
-		LOG("Setting adapter %d as master for adapter %d", a_id, b_id);
+		if (a_id == b_id || (a[a_id] && a[a_id]->slave))
+			continue;
+		if (!a[b_id])
+			a[b_id] = adapter_alloc();
+		a[b_id]->slave = a_id + 1;
+		LOGL(0, "Setting adapter %d as master for adapter %d", a_id, b_id);
 	}
 }
 
@@ -1433,7 +1435,7 @@ void set_unicable_input(char *o)
 				input = input2;
 		}
 		opts.axe_unicinp[i] = input;
-		LOG("Setting input %d for unicable adapter %d", input, i);
+		LOGL(0, "Setting input %d for unicable adapter %d", input, i);
 	}
 }
 
