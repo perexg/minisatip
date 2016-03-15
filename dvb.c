@@ -776,7 +776,7 @@ set_pid (int hw, int ad, uint16_t i_pid)
 
 	if (axe_dmxts_add_pid(a->dvr, i_pid) < 0)
 	{
-		LOG ("failed setting filter on %d (%s)", i_pid, strerror (errno));
+		LOG ("failed setting filter on PID %d (%s) for ADAPTER %d", i_pid, strerror (errno), hw);
 		return -1;
 	}
 	LOG ("setting filter on PID %d for ADAPTER %d", i_pid, a->pa);
