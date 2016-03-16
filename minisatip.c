@@ -90,7 +90,8 @@ static const struct option long_options[] =
 		{ "help", no_argument, NULL, 'h' },
 		{ "version", no_argument, NULL, 'V' },
 #ifdef AXE
-		{ "link_adapters", required_argument, NULL, 'L' },
+		{ "link-adapters", required_argument, NULL, 'L' },
+		{ "free-inputs", required_argument, NULL, 'A' },
 		{ "quattro", no_argument, NULL, 'Q' },
 		{ "quattro-hiband", required_argument, NULL, 'Z' },
 		{ "axe-uinput", required_argument, NULL, 'U' },
@@ -135,6 +136,7 @@ static const struct option long_options[] =
 #define AXE_UNICINP_OPT 'U'
 #define AXE_SKIP_PKT 'M'
 #define AXE_POWER 'P'
+#define ABSOLUTE_SRC 'A'
 
 
 char *built_info[] =
@@ -220,7 +222,7 @@ void usage()
 #endif
 			"[-u A1:S1-F1[-PIN]] [-w http_server[:port]] \n\
 	\t[-x http_port] [-X xml_path] [-y rtsp_port] [-L M1:S1[,M2:S2]] [-U unicable_adapter] \n\
-	\t[-M mpegts_packets]\n\n\
+	\t[-M mpegts_packets] [-A SRC1:INP1:DISEQC1[,SRC2:INP2:DISEQC2]]\n\n\
 Help\n\
 -------\n\
 \n\
@@ -354,6 +356,14 @@ Help\n\
 \t* The format is: M1:S1[,M2:S2] - master:slave\n\
 	* eg: 0:1,0:2,0:3 \n\
 \n\
+* -A --free-inputs mapping_string: absolute source mapping for free input mode\n\
+\t* The format is: SRC1:INP1:DISEQC1[,SRC2:INP2:DISEQC2]\n\
+	* SRC: source number (src argument for SAT>IP minus 1 - 0-15)\n\
+	* INP: coaxial input (0-3)\n\
+	* DISEQC: diseqc position (0-15)\n\
+	* eg: 13E,19.2E on inputs 0&1 and 23.5E,28.2E on inputs 2&3:\n\
+		-A 0:0:0,0:1:0,1:0:0,1:1:1,2:2:0,2:3:0,3:2:1,3:2:2\n\
+\n\
 * -P --power num: power to all inputs (0 = only active inputs, 1 = all inputs)\n\
 \n\
 * -Q --quattro  quattro LNB config (H/H,H/V,L/H,L/V)\n\
@@ -429,7 +439,7 @@ void set_options(int argc, char *argv[])
 	memset(opts.playlist, 0, sizeof(opts.playlist));
 
 	while ((opt = getopt_long(argc, argv,
-			"flr:a:td:w:p:s:n:hc:b:m:p:e:x:u:j:o:gy:i:q:D:VR:S:TX:Y:OL:QZ:U:M:P:",
+			"flr:a:td:w:p:s:n:hc:b:m:p:e:x:u:j:o:gy:i:q:D:VR:S:TX:Y:OL:QZ:U:M:P:A:",
 			long_options, NULL)) != -1)
 	{
 		//              printf("options %d %c %s\n",opt,opt,optarg);
@@ -678,6 +688,10 @@ void set_options(int argc, char *argv[])
 		case LINK_OPT:
 			set_link_adapters(optarg);
                         break;
+
+		case ABSOLUTE_SRC:
+			set_absolute_src(optarg);
+			break;
 
 		case QUATTRO_OPT:
 			opts.quattro = 1;

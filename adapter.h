@@ -140,6 +140,7 @@ void set_diseqc_timing(char *o);
 void set_slave_adapters(char *o);
 void set_adapter_dmxsource(char *o);
 void set_link_adapters(char *o);
+void set_absolute_src(char *o);
 void set_unicable_input(char *o);
 void reset_pids_type(int aid, int clear_pat);
 void reset_ecm_type_for_key(int aid, int key);

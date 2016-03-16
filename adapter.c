@@ -348,9 +348,12 @@ int close_adapter(int na)
 	ad->sock = -1;
 	ad->strength = 0;
 	ad->snr = 0;
+#ifndef AXE
 	ad->old_diseqc = -1;
 	ad->old_hiband = -1;
 	ad->old_pol = -1;
+#endif
+	mutex_unlock(&ad->mutex);
 	mutex_destroy(&ad->mutex);
 	//      if(a[na]->buf)free1(a[na]->buf);a[na]->buf=NULL;
 	LOG("done closing adapter %d", na);
@@ -558,6 +561,19 @@ int set_adapter_for_stream(int sid, int aid)
 	return 0;
 }
 
+#ifdef AXE
+static void free_axe_input(adapter *ad)
+{
+	int aid;
+	adapter *ad2;
+
+	for (aid = 0; aid < 4; aid++) {
+		ad2 = get_adapter2(aid);
+		ad2->axe_used &= ~(1 << ad->id);
+	}
+}
+#endif
+
 void close_adapter_for_stream(int sid, int aid)
 {
 	adapter *ad;
@@ -576,9 +592,12 @@ void close_adapter_for_stream(int sid, int aid)
 	LOG("closed adapter %d for stream %d m:%d s:%d", aid, sid, ad->master_sid,
 			ad->sid_cnt);
 	// delete the attached PIDs as well
-	if (ad->sid_cnt == 0)
+	if (ad->sid_cnt == 0) {
 		mark_pids_deleted(aid, -1, NULL);
-	else
+#ifdef AXE
+		free_axe_input(ad);
+#endif
+	} else
 		mark_pids_deleted(aid, sid, NULL);
 	update_pids(aid);
 //	if (a[aid]->sid_cnt == 0)
@@ -1416,6 +1435,44 @@ void set_link_adapters(char *o)
 			a[b_id] = adapter_alloc();
 		a[b_id]->slave = a_id + 1;
 		LOGL(0, "Setting adapter %d as master for adapter %d", a_id, b_id);
+	}
+}
+
+extern int absolute_switch;
+extern int absolute_table[32][4];
+
+void set_absolute_src(char *o)
+{
+	int i, la, src, inp, pos;
+	char buf[100], *arg[20], *inps, *poss;
+
+	strncpy(buf, o, sizeof(buf)-1);
+	buf[sizeof(buf)-1] = '\0';
+	la = split(arg, buf, sizeof(arg), ',');
+	for (i=0; i<la; i++)
+	{
+		inps = strchr(arg[i], ':');
+		if (!inps)
+			continue;
+		inps++;
+		poss = strchr(inps, ':');
+		if (!poss)
+			continue;
+		poss++;
+
+		src = map_intd(arg[i], NULL, -1);
+		inp = map_intd(inps, NULL, -1);
+		pos = map_intd(poss, NULL, -1);
+		
+		if (src < 0 || src > 31)
+			continue;
+		if (inp < 0 || inp > 3)
+			continue;
+		if (pos < 0 || pos >= 15)
+			continue;
+		LOGL(0, "Setting source %d (src=%d) to input %d position %d", src, src + 1, inp, pos);
+		absolute_table[src][inp] = pos + 1;
+		absolute_switch = 1;
 	}
 }
 
