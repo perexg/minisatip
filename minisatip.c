@@ -423,7 +423,7 @@ void set_options(int argc, char *argv[])
 	opts.satip_servers[0] = 0;
 	opts.document_root = "/usr/share/minisatip/html";
 	opts.xml_path = DESC_XML;
-	opts.no_threads = 0;
+	opts.no_threads = 1;
 	opts.th_priority = -1;
 	opts.diseqc_before_cmd = 15;
 	opts.diseqc_after_cmd = 54;
