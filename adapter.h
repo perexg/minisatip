@@ -107,6 +107,10 @@ typedef struct struct_adapter
 	Dvb_delsys delsys;
 	Device_signal get_signal;
 	Adapter_commit post_init, close;
+
+	int64_t axe_vdevice_last_sync;
+	int64_t axe_pktc;
+	int64_t axe_ccerr;
 } adapter;
 
 extern adapter *a[MAX_ADAPTERS];

@@ -83,6 +83,8 @@ var ad_phyfd	= [$ad_phyfd0$, $ad_phyfd1$, $ad_phyfd2$, $ad_phyfd3$, $ad_phyfd4$,
 var ad_allsys	= ["$ad_allsys0$", "$ad_allsys1$", "$ad_allsys2$", "$ad_allsys3$", "$ad_allsys4$", "$ad_allsys5$", "$ad_allsys6$", "$ad_allsys7$", "$ad_allsys8$", "$ad_allsys9$", "$ad_allsys10$", "$ad_allsys11$", "$ad_allsys12$", "$ad_allsys13$", "$ad_allsys14$", "$ad_allsys15$" ];
 var ad_pids		= ["$ad_pids0$", "$ad_pids1$", "$ad_pids2$", "$ad_pids3$", "$ad_pids4$", "$ad_pids5$", "$ad_pids6$", "$ad_pids7$", "$ad_pids8$", "$ad_pids9$", "$ad_pids10$", "$ad_pids11$", "$ad_pids12$", "$ad_pids13$", "$ad_pids14$", "$ad_pids15$" ];
 var ad_satip	= ["$ad_satip0$", "$ad_satip1$", "$ad_satip2$", "$ad_satip3$", "$ad_satip4$", "$ad_satip5$", "$ad_satip6$", "$ad_satip7$", "$ad_satip8$", "$ad_satip9$", "$ad_satip10$", "$ad_satip11$", "$ad_satip12$", "$ad_satip13$", "$ad_satip14$", "$ad_satip15$" ];
+var ad_axe_pktc = [$ad_axe_pktc0$, $ad_axe_pktc1$, $ad_axe_pktc2$, $ad_axe_pktc3$];
+var ad_axe_ccerr = [$ad_axe_ccerr0$, $ad_axe_ccerr1$, $ad_axe_ccerr2$, $ad_axe_ccerr3$];
 var st_enabled	= [$st_enabled0$, $st_enabled1$, $st_enabled2$, $st_enabled3$, $st_enabled4$, $st_enabled5$, $st_enabled6$, $st_enabled7$, $st_enabled8$, $st_enabled9$, $st_enabled10$, $st_enabled11$, $st_enabled12$, $st_enabled13$, $st_enabled14$, $st_enabled15$ ];
 var st_adapter	= [$st_adapter0$, $st_adapter1$, $st_adapter2$, $st_adapter3$, $st_adapter4$, $st_adapter5$, $st_adapter6$, $st_adapter7$, $st_adapter8$, $st_adapter9$, $st_adapter10$, $st_adapter11$, $st_adapter12$, $st_adapter13$, $st_adapter14$, $st_adapter15$ ];
 var st_rport	= [$st_rport0$, $st_rport1$, $st_rport2$, $st_rport3$, $st_rport4$, $st_rport5$, $st_rport6$, $st_rport7$, $st_rport8$, $st_rport9$, $st_rport10$, $st_rport11$, $st_rport12$, $st_rport13$, $st_rport14$, $st_rport15$ ];
@@ -112,6 +114,8 @@ myTable += "<th class=''>Status</th>";
 myTable += "<th class='dt-right'>Frequency</th>";
 myTable += "<th class='dt-right'>SR/BW</th>";
 myTable += "<th class='dt-right'>Signal</th>";
+myTable += "<th class='dt-right'>Packets</th>";
+myTable += "<th class='dt-right'>CC Errors</th>";
 myTable += "<th class='dt-left'>Streams</th>";
 myTable += "<th class='dt-left'>Cryptinfo</th>";
 myTable += "</tr></thead><tbody>";
@@ -173,6 +177,8 @@ for (var i = 0; i < max_adapters; i++) {
 			signal += "<div class='level'>BER <div class='pBar' data-from='"+ ad_ber[i] + "' data-to='" + ad_ber[i] + "' data-color='red'></div> " + ad_ber[i] + "</div><br />";
 	}
 	myTable += "<td class='dt-right'>" + signal + " </td>";
+	myTable += "<td class='dt-right'>" + ad_axe_pktc[i] + " </td>";
+	myTable += "<td class='dt-right'>" + ad_axe_ccerr[i] + " </td>";
 
 	// STREAMS
 	myTable += "<td class='dt-left'>";

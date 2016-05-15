@@ -751,6 +751,14 @@ void * get_var_address(char *var, float *multiplier, int * type, void *storage,
 					*multiplier = 1;
 					return storage;
 				}
+				else if (sym[i][j].type == VAR_FUNCTION_INT64)
+				{
+					off = map_intd(var + strlen(sym[i][j].name), NULL, 0);
+					get_data_int64 fun64 = (get_data_int64) sym[i][j].addr;
+					*(int64_t *) storage = fun64(off);
+					*multiplier = 1;
+					return storage;
+				}
 				else if (sym[i][j].type == VAR_FUNCTION_STRING)
 				{
 					off = map_intd(var + strlen(sym[i][j].name), NULL, 0);

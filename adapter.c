@@ -1767,6 +1767,61 @@ char *get_all_delsys(int aid, char *dest, int max_size)
 	return dest;
 }
 
+static char *axe_vdevice_read(int aid, char *buf, size_t buflen)
+{
+	size_t len;
+	int i, fd;
+	for (i = 0; i < 10; i++) {
+		snprintf(buf, buflen, "/proc/STAPI/stpti/PTI%d/vDeviceInfo", aid ^ 1);
+		fd = open(buf, O_RDONLY);
+		len = read(fd, buf, buflen-1);
+		close(fd);
+		if (len > 200) {
+			buf[len] = '\0';
+			return buf;
+		}
+	}
+	return NULL;
+}
+
+adapter *axe_vdevice_sync(int aid)
+{
+	adapter *ad = get_adapter_nw(aid);
+	char buf[1024], *p;
+	int64_t t;
+	uint32_t addr, pktc, syncerrc, tperrc, ccerr;
+	int fd;
+
+	if (!ad)
+		return NULL;
+	t = getTickUs();
+	if (ad->axe_vdevice_last_sync + 1000000 >= t)
+		return ad;
+	ad->axe_vdevice_last_sync = t;
+	p = axe_vdevice_read(aid, buf, sizeof(buf));
+	if (p) p = strchr(p, '\n');
+	if (p) {
+		if (sscanf(p + 1, "#%08x:  %08x %08x %08x %08x",
+			        &addr, &pktc, &syncerrc, &tperrc, &ccerr) == 5) {
+			ad->axe_pktc = pktc;
+			ad->axe_ccerr = ccerr;
+		}
+	}
+	return ad;
+}
+
+int64_t get_axe_pktc(int aid)
+{
+	adapter *ad = axe_vdevice_sync(aid);
+	return ad ? ad->axe_pktc : 0;
+}
+
+int64_t get_axe_ccerr(int aid)
+{
+	adapter *ad = axe_vdevice_sync(aid);
+	return ad ? ad->axe_ccerr : 0;
+}
+
 _symbols adapters_sym[] =
 		{
 		{ "ad_enabled", VAR_AARRAY_INT8, a, 1, MAX_ADAPTERS, offsetof(adapter,
@@ -1809,4 +1864,6 @@ _symbols adapters_sym[] =
 				{ "tuner_c2", VAR_INT, &tuner_c2, 1, 0, 0 },
 				{ "tuner_t", VAR_INT, &tuner_t, 1, 0, 0 },
 				{ "tuner_c", VAR_INT, &tuner_c, 1, 0, 0 },
+				{ "ad_axe_pktc", VAR_FUNCTION_INT64, (void *) &get_axe_pktc, 0, 0, 0 },
+				{ "ad_axe_ccerr", VAR_FUNCTION_INT64, (void *) &get_axe_ccerr, 0, 0, 0 },
 				{ NULL, 0, NULL, 0, 0 } };
