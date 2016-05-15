@@ -1045,12 +1045,12 @@ int mutex_destroy(SMutex* mutex)
 				__FUNCTION__, mutex, rv, strerror(rv));
 
 	LOGL(4, "Destroying mutex %p", mutex);
-//	if ((rv = pthread_mutex_destroy(&mutex->mtx)))
-//	{
-//		LOG("mutex destroy %p failed with error %d %s", mutex, rv, strerror(rv));
-//		mutex->enabled = 1;
-//		return 1;
-//	}
+	if ((rv = pthread_mutex_destroy(&mutex->mtx)))
+	{
+		LOG("mutex destroy %p failed with error %d %s", mutex, rv, strerror(rv));
+		mutex->enabled = 1;
+		return 1;
+	}
 	return 0;
 }
 
