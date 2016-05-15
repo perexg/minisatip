@@ -85,6 +85,7 @@ var ad_pids		= ["$ad_pids0$", "$ad_pids1$", "$ad_pids2$", "$ad_pids3$", "$ad_pid
 var ad_satip	= ["$ad_satip0$", "$ad_satip1$", "$ad_satip2$", "$ad_satip3$", "$ad_satip4$", "$ad_satip5$", "$ad_satip6$", "$ad_satip7$", "$ad_satip8$", "$ad_satip9$", "$ad_satip10$", "$ad_satip11$", "$ad_satip12$", "$ad_satip13$", "$ad_satip14$", "$ad_satip15$" ];
 var ad_axe_pktc = [$ad_axe_pktc0$, $ad_axe_pktc1$, $ad_axe_pktc2$, $ad_axe_pktc3$];
 var ad_axe_ccerr = [$ad_axe_ccerr0$, $ad_axe_ccerr1$, $ad_axe_ccerr2$, $ad_axe_ccerr3$];
+var ad_axe_coax = ["$ad_axe_coax0$", "$ad_axe_coax1$", "$ad_axe_coax2$", "$ad_axe_coax3$"];
 var st_enabled	= [$st_enabled0$, $st_enabled1$, $st_enabled2$, $st_enabled3$, $st_enabled4$, $st_enabled5$, $st_enabled6$, $st_enabled7$, $st_enabled8$, $st_enabled9$, $st_enabled10$, $st_enabled11$, $st_enabled12$, $st_enabled13$, $st_enabled14$, $st_enabled15$ ];
 var st_adapter	= [$st_adapter0$, $st_adapter1$, $st_adapter2$, $st_adapter3$, $st_adapter4$, $st_adapter5$, $st_adapter6$, $st_adapter7$, $st_adapter8$, $st_adapter9$, $st_adapter10$, $st_adapter11$, $st_adapter12$, $st_adapter13$, $st_adapter14$, $st_adapter15$ ];
 var st_rport	= [$st_rport0$, $st_rport1$, $st_rport2$, $st_rport3$, $st_rport4$, $st_rport5$, $st_rport6$, $st_rport7$, $st_rport8$, $st_rport9$, $st_rport10$, $st_rport11$, $st_rport12$, $st_rport13$, $st_rport14$, $st_rport15$ ];
@@ -116,6 +117,7 @@ myTable += "<th class='dt-right'>SR/BW</th>";
 myTable += "<th class='dt-right'>Signal</th>";
 myTable += "<th class='dt-right'>Packets</th>";
 myTable += "<th class='dt-right'>CC Errors</th>";
+myTable += "<th class='dt-right'>Coax Cable</th>";
 myTable += "<th class='dt-left'>Streams</th>";
 myTable += "<th class='dt-left'>Cryptinfo</th>";
 myTable += "</tr></thead><tbody>";
@@ -179,6 +181,7 @@ for (var i = 0; i < max_adapters; i++) {
 	myTable += "<td class='dt-right'>" + signal + " </td>";
 	myTable += "<td class='dt-right'>" + ad_axe_pktc[i] + " </td>";
 	myTable += "<td class='dt-right'>" + ad_axe_ccerr[i] + " </td>";
+	myTable += "<td class='dt-right'>" + ad_axe_coax[i] + " </td>";
 
 	// STREAMS
 	myTable += "<td class='dt-left'>";

@@ -1822,6 +1822,27 @@ int64_t get_axe_ccerr(int aid)
 	return ad ? ad->axe_ccerr : 0;
 }
 
+char *get_axe_coax(int aid, char *dest, int max_size)
+{
+	int i, len;
+	adapter *ad;
+	dest[0] = 0;
+	len = 0;
+	if (aid < 0 || aid > 3)
+		return dest;
+
+	for (i = 0; i < 4; i++) {
+		ad = get_adapter2(i);
+		if (ad && ad->axe_used & (1<<aid))
+			len += snprintf(dest + len, max_size - len, "LNB%d,", i + 1);
+	}
+
+	if (len > 0)
+		dest[len - 1] = 0;
+
+	return dest;
+}
+
 _symbols adapters_sym[] =
 		{
 		{ "ad_enabled", VAR_AARRAY_INT8, a, 1, MAX_ADAPTERS, offsetof(adapter,
@@ -1866,4 +1887,5 @@ _symbols adapters_sym[] =
 				{ "tuner_c", VAR_INT, &tuner_c, 1, 0, 0 },
 				{ "ad_axe_pktc", VAR_FUNCTION_INT64, (void *) &get_axe_pktc, 0, 0, 0 },
 				{ "ad_axe_ccerr", VAR_FUNCTION_INT64, (void *) &get_axe_ccerr, 0, 0, 0 },
+				{ "ad_axe_coax", VAR_FUNCTION_STRING, (void *) &get_axe_coax, 0, 0, 0 },
 				{ NULL, 0, NULL, 0, 0 } };
