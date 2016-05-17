@@ -343,7 +343,7 @@ int send_jess(int fd, int freq, int pos, int pol, int hiband, int slot, int ufre
 	int o13v = ufreq < 0;
 
 	cmd.msg[1] = slot << 3;
-	cmd.msg[1] |= ((t << 8) & 0x07);
+	cmd.msg[1] |= ((t >> 8) & 0x07);
 	cmd.msg[2] = (t & 0xff);
 	cmd.msg[3] = ((pos & 0x3f) << 2) | (pol ? 2 : 0) | (hiband ? 1 : 0);
 
