@@ -916,6 +916,7 @@ int dvb_tune(int aid, transponder * tp)
 	ssize_t drv;
 	char buf[1316];
 	axe_set_tuner_led(aid + 1, 1);
+	axe_dmxts_stop(ad->dvr);
 	axe_fe_reset(ad->fe);
 	do { drv = read(ad->dvr, buf, sizeof(buf)); } while (drv > 0);
 #endif
@@ -1402,8 +1403,10 @@ int dvb_close(adapter *a2)
 	if (a2->fe <= 0)
 		return;
 	a2->fe = -1;
-	if (a2->fe2 > 0)
+	if (a2->fe2 > 0) {
+		axe_dmxts_stop(a2->fe2);
 		axe_fe_reset(a2->fe2);
+	}
 	for (aid = busy = 0; aid < 4; aid++) {
 		c = a[aid];
 		c->axe_used &= ~(1 << a2->id);

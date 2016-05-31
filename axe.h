@@ -88,6 +88,11 @@ static inline int axe_dmxts_start(int fd)
   return ioctl(fd, DMXTS_TRANSFER_START);
 }
 
+static inline int axe_dmxts_stop(int fd)
+{
+  return ioctl(fd, DMXTS_TRANSFER_STOP);
+}
+
 #ifdef AXE_MAIN
 
 int axe_fp_fd = -1;
