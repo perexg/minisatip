@@ -169,10 +169,7 @@ for (var i = 0; i < max_adapters; i++) {
 		var s1 = parseInt(ad_strength[i] / 2.55);
 		signal = "<div class='level'>STR <div class='pBar' data-from='"+ s1 + "' data-to='" + s1 + "'></div> " + s1 + "%</div><br />";
 
-		if (ad_type[i] == 1 || ad_type[i] == 3)
-			var s2 = parseInt(ad_snr[i] / 2.55);
-		else
-			var s2 = parseInt(ad_snr[i] / 0.15);
+		var s2 = parseInt(ad_snr[i] / 0.15);
 		signal += "<div class='level'>SNR <div class='pBar' data-from='"+ s2 + "' data-to='" + s2 + "'></div> " + s2 + "%</div><br />";
 
 		if (ad_ber[i] > 0)
