@@ -150,11 +150,11 @@ init_hw ()
 			a[i].fn);
 #ifdef AXE
 		sprintf (buf, "/dev/axe/frontend-%d", a[i].pa);
-#else
-		sprintf (buf, "/dev/dvb/adapter%d/frontend%d", a[i].pa, a[i].fn);
 		if (a[i].fe2 > 0)
 			a[i].fe = a[i].fe2;
 		else
+#else
+		sprintf (buf, "/dev/dvb/adapter%d/frontend%d", a[i].pa, a[i].fn);
 #endif
 		a[i].fe = a[i].fe2 = open (buf, O_RDWR | O_NONBLOCK);
 
