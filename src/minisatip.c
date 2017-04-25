@@ -552,7 +552,7 @@ void set_options(int argc, char *argv[])
 #endif
 #ifdef AXE
 	opts.no_threads = 1;
-	opts.document_root = "/usr/share/minisatip/html";
+	opts.document_root = "/usr/share/minisatip8/html";
 #define AXE_OPTS "7:QW:8:A:"
 #else
 #define AXE_OPTS ""
