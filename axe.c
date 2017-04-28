@@ -107,6 +107,8 @@ void axe_set_network_led(int on)
 int axe_read(int socket, void *buf, int len, sockets *ss, int *rv)
 {
 	*rv = read(socket, buf, len);
+	if (len == *rv)
+		LOGL(3, "AXE: MAX READ %d", len);
 //	if(*rv < 0 || *rv == 0 || errno == -EAGAIN)
 	if(*rv < 0 || *rv == 0 || errno == -EAGAIN)
 	{
