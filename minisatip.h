@@ -10,7 +10,7 @@
 
 #define VERSION_BUILD "4"
 #define CC(a,b,c) #a b #c
-#define VERSION CC(0.7.,VERSION_BUILD,-axe201)
+#define VERSION CC(0.7.,VERSION_BUILD,-axe202)
 
 void set_options (int argc, char *argv[]);
 
