@@ -130,7 +130,7 @@ int satipc_reply(sockets * s)
 	LOG("satipc_reply (sock %d) handle %d, adapter %d:\n%s", s->id, s->sock,
 					s->sid, s->buf);
 
-	if ((timeout = strstr(s->buf, "timeout=")))
+	if ((timeout = strstr((char *)s->buf, "timeout=")))
 	{
 		int tmout;
 		timeout += strlen("timeout=");
@@ -138,21 +138,21 @@ int satipc_reply(sockets * s)
 		sockets_timeout(ad->fe_sock, tmout * 500); // 2 times 30s
 	}
 
-	sess = strstr(s->buf, "Session:");
+	sess = strstr((char *)s->buf, "Session:");
 
 	if (sip->last_cmd == RTSP_DESCRIBE)
 	{
-		set_adapter_signal(ad, s->buf, rlen);
+		set_adapter_signal(ad, (char *)s->buf, rlen);
 	}
 
-	sep = strstr(s->buf, "minisatip");
+	sep = strstr((char *)s->buf, "minisatip");
 	if(sep)
 	{
 		sip->option_no_session = 1;
 		sip->option_no_setup = 1;
 		sip->option_no_option = 1;
 	}
-	sep = strstr(s->buf, "enigma_minisatip");
+	sep = strstr((char *)s->buf, "enigma_minisatip");
 	if(sep && !ad->restart_when_tune)
 	{
 		LOGL(3, "Setting adapter %d to restart every time the transponder is changed", ad->id);
@@ -288,7 +288,7 @@ int satipc_close(sockets * s)
 void set_adapter_signal(adapter *ad, char *b, int rlen)
 {
 	int i, strength, status, snr;
-	char *ver, *tun, *signal;
+	char *ver, *tun, *signal = NULL;
 	for (i = 0; i < rlen - 4; i++)
 		if (b[i] == 'v' && b[i + 1] == 'e' && b[i + 2] == 'r'
 						&& b[i + 3] == '=')
@@ -314,13 +314,11 @@ void set_adapter_signal(adapter *ad, char *b, int rlen)
 
 int satipc_rtcp_reply(sockets * s)
 {
-	unsigned char *b = s->buf, *ver, *signal;
-	char *tun;
-	int i, rlen = s->rlen;
+	unsigned char *b = s->buf;
+	int rlen = s->rlen;
 	adapter *ad;
 	satipc *sip;
 	get_ad_and_sipr(s->sid, 0);
-	int strength, status, snr;
 	uint32_t rp;
 
 	s->rlen = 0;
@@ -335,7 +333,7 @@ int satipc_rtcp_reply(sockets * s)
 				ad->id, rp - sip->rcvp, sip->rtp_miss, sip->rtp_ooo,
 				ad->pid_err - ad->dec_err);
 	}
-	set_adapter_signal(ad, b, rlen);
+	set_adapter_signal(ad, (char *)b, rlen);
 	return 0;
 }
 
@@ -488,7 +486,7 @@ int process_rtsp_tcp(sockets *ss, unsigned char *rtsp, int rtsp_len, void *buf,
 	{
 		tmp_char = rtsp[rtsp_len + 4];
 		rtsp[rtsp_len + 4] = 0;
-		set_adapter_signal(ad, rtsp + 4, rtsp_len);
+		set_adapter_signal(ad, (char *)rtsp + 4, rtsp_len);
 		rtsp[rtsp_len + 4] = tmp_char;
 		return 0;
 	}
@@ -513,8 +511,6 @@ int satipc_tcp_read(int socket, void *buf, int len, sockets *ss, int *rb)
 {
 	unsigned char *rtsp;
 	sockets tmp_sock;
-	uint16_t seq;
-	static int iter;
 	int pos;
 	int rtsp_len;
 	int tmp_len = 0;
@@ -621,7 +617,7 @@ int satipc_tcp_read(int socket, void *buf, int len, sockets *ss, int *rb)
 			*rb = pos;
 
 		}
-		else if (!strncmp(rtsp, "RTSP", 4))
+		else if (!strncmp((char *)rtsp, "RTSP", 4))
 		{
 			unsigned char *nlnl, *cl;
 			int bytes, icl = 0;
@@ -631,7 +627,7 @@ int satipc_tcp_read(int socket, void *buf, int len, sockets *ss, int *rb)
 				LOG("%s: skipped %d bytes", __FUNCTION__, skipped_bytes);
 				skipped_bytes = 0;
 			}
-			nlnl = strstr(rtsp, "\r\n\r\n");
+			nlnl = (unsigned char *)strstr((char *)rtsp, "\r\n\r\n");
 //			LOG("found RTSP nlnl %d, len %d", nlnl - rtsp, sip->tcp_len);
 			if(nlnl > sip->tcp_data + sip->tcp_len)
 			{
@@ -639,13 +635,13 @@ int satipc_tcp_read(int socket, void *buf, int len, sockets *ss, int *rb)
 				nlnl = NULL;
 				sip->tcp_data[sip->tcp_size + 1] = 0;
 			}
-			if (nlnl && (cl = strcasestr(rtsp, "content-length:")))
+			if (nlnl && (cl = (unsigned char *)strcasestr((char *)rtsp, "content-length:")))
 			{
 				cl += 15;
 				while (*cl == 0x20)
 					cl++;
 
-				icl = map_intd(cl, NULL, 0);
+				icl = map_intd((char *)cl, NULL, 0);
 				nlnl += icl;
 			}
 			if (!nlnl)
@@ -822,7 +818,6 @@ int http_request(adapter *ad, char *url, char *method)
 
 	session[0] = 0;
 	sid[0] = 0;
-	int64_t ctime = getTick();
 	remote_socket = sip->use_tcp ? ad->dvr : ad->fe;
 
 	if (!sip->option_no_setup && !method && sip->sent_transport == 0)
@@ -1042,7 +1037,6 @@ void satipc_commit(adapter *ad)
 
 	if (send_apids)
 	{
-		int pids[MAX_PIDS];
 		int i;
 		if (len > 0)
 			len += sprintf(url + len, "&");
