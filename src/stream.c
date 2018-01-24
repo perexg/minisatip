@@ -987,7 +987,7 @@ int process_dmx(sockets *s)
 #endif
 
 	rlen = ad->rlen;
-	int packet_no_sid = check_cc(ad);
+	const int packet_no_sid = 0 /* check_cc(ad) */;
 
 	if (ad->sid_cnt == 1 && ad->master_sid >= 0 && !packet_no_sid) // we have just 1 stream, do not check the pids, send everything to the destination
 	{
