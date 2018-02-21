@@ -763,7 +763,7 @@ void free_axe_input(adapter *ad)
 	adapter *ad2;
 
 	for (aid = 0; aid < 4; aid++) {
-		ad2 = get_adapter(aid);
+		ad2 = get_configured_adapter(aid);
 		if(ad2)
 			ad2->axe_used &= ~(1 << ad->id);
 	}
