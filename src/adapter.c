@@ -951,6 +951,8 @@ int tune(int aid, int sid)
 		ad->status = -1;
 		ad->status_cnt = 0;
 		ad->wait_new_stream = 1;
+		ad->strength = 0;
+		ad->snr = 0;
 		flush_data = 1;
 		ad->is_t2mi = 0;
 		if (ad->restart_when_tune)
@@ -1320,16 +1322,20 @@ describe_adapter(int sid, int aid, char *dad, int ld)
 
 	if (use_ad)
 	{
-		strength = ad->strength;
-		snr = ad->snr;
-		if (snr > 15)
-			snr = snr >> 4;
-		status = (ad->status & FE_HAS_LOCK) > 0;
+		if (ad->status == -1) {
+			status = strength = snr = 0;
+		} else {
+			strength = ad->strength;
+			snr = ad->snr;
+			if (snr > 15)
+				snr = snr >> 4;
+			status = (ad->status & FE_HAS_LOCK) > 0;
 
-		if (strength > 255 || strength < 0)
-			strength = 1;
-		if (snr > 15 || snr < 0)
-			snr = 1;
+			if (strength > 255 || strength < 0)
+				strength = 1;
+			if (snr > 15 || snr < 0)
+				snr = 1;
+		}
 	}
 	if (t->sys == 0)
 		len = snprintf(dad, ld, "ver=1.0;src=1;tuner=%d,0,0,0,0,,,,,,,;pids=",
